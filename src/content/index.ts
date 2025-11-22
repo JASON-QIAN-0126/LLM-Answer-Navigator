@@ -13,6 +13,37 @@ let isManualScrolling = false; // 标记是否正在进行点击导航滚动
 let contentMutationObserver: MutationObserver | null = null; // 监听页面变化的观察器引用
 let currentInitId = 0; // 初始化版本控制，防止竞态条件
 
+// Settings Cache
+let cachedSettings: { [key: string]: any } | null = null;
+
+async function getSettings() {
+  if (cachedSettings) return cachedSettings;
+  cachedSettings = await chrome.storage.sync.get([
+    'custom_urls', 
+    'enable_chatgpt', 
+    'enable_claude', 
+    'enable_gemini',
+    'ui_theme'
+  ]);
+  return cachedSettings;
+}
+
+// Listen for storage changes
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'sync') {
+    if (cachedSettings) {
+      for (const key in changes) {
+        cachedSettings[key] = changes[key].newValue;
+      }
+    }
+    
+    // Real-time theme update
+    if (changes.ui_theme && timelineNavigator) {
+      timelineNavigator.setTheme(changes.ui_theme.newValue || 'auto');
+    }
+  }
+});
+
 /**
  * 防抖函数
  */
@@ -196,12 +227,10 @@ function initTimelineNavigator(): void {
   timelineNavigator.setConversationId(conversationId);
 
   // 2. 加载并设置主题
-  chrome.storage.sync.get(['ui_theme'], (result) => {
-    const theme = (result.ui_theme as ThemeMode) || 'auto';
-    if (timelineNavigator) {
-      timelineNavigator.setTheme(theme);
-    }
-  });
+  const theme = (cachedSettings?.ui_theme as ThemeMode) || 'auto';
+  if (timelineNavigator) {
+    timelineNavigator.setTheme(theme);
+  }
   
   // 注册节点点击事件
   timelineNavigator.onNodeClick((itemIndex: number) => {
@@ -254,7 +283,7 @@ async function init() {
     
     try {
     // 从存储中加载自定义 URL
-    const settings = await chrome.storage.sync.get(['custom_urls', 'enable_chatgpt', 'enable_claude', 'enable_gemini']);
+    const settings = await getSettings();
     
     // 关键检查：如果在 await 期间被外部再次调用了 clearUI/init，则终止
     if (executionId !== currentInitId) return;
