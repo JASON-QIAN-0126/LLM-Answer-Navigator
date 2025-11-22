@@ -160,6 +160,11 @@ function clearUI(): void {
     contentMutationObserver = null;
     console.log('🔌 MutationObserver 已断开');
   }
+  
+  // 移除事件监听器，防止内存泄漏
+  document.removeEventListener('scroll', handleScroll, { capture: true } as any);
+  window.removeEventListener('resize', handleResize);
+  
   // 重置 indexManager，避免持有旧的 DOM 引用
   indexManager = null;
 }
