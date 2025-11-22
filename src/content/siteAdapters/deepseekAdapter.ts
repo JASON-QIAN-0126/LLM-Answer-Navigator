@@ -17,9 +17,9 @@ export const deepseekAdapter: SiteAdapter = {
     
     // 尝试查找用户消息
     // DeepSeek 的 class 可能会变，建议使用 inspector 确认
-    // 假设它也有类似的 user/assistant 角色区分
-    // 这里先用一个比较通用的查询，实际需要根据 DeepSeek 页面调整
+    // 根据用户提供的 HTML，DeepSeek 使用 data-um-id 标记用户消息容器
     const userMessages = Array.from(root.querySelectorAll([
+        'div[data-um-id]',
         '.ds-user-message', 
         '.user-message', 
         '[role="user"]',
@@ -62,6 +62,7 @@ export const deepseekAdapter: SiteAdapter = {
    */
   getPromptCount(root: Document | HTMLElement): number {
     const selectors = [
+        'div[data-um-id]',
         '.ds-user-message', 
         '.user-message', 
         '[role="user"]',
