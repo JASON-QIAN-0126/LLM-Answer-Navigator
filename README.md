@@ -16,13 +16,14 @@
   <img src="https://img.shields.io/badge/ChatGPT-74aa9c?logo=openai&logoColor=white" alt="ChatGPT">
   <img src="https://img.shields.io/badge/Claude-191919?logo=anthropic&logoColor=white" alt="Claude">
   <img src="https://img.shields.io/badge/Gemini-8E75B2?logo=google&logoColor=white" alt="Gemini">
+  <img src="https://img.shields.io/badge/DeepSeek-4285F4?logo=deepseek&logoColor=white" alt="DeepSeek">
 </p>
 
 ---
 
 ## 📖 What is this?
 
-When using AI chat tools like ChatGPT, Claude, or Gemini, have you ever encountered these frustrations:
+When using AI chat tools like ChatGPT, Claude, Gemini, or DeepSeek, have you ever encountered these frustrations:
 
 - 💬 **Conversations too long** - wanting to review a previous question but having to scroll endlessly
 - 🔍 **Can't find key points** - important conversations buried in lengthy chat history
@@ -50,22 +51,23 @@ When using AI chat tools like ChatGPT, Claude, or Gemini, have you ever encounte
 - Marking status **auto-saves**, persists after switching conversations
 - Supports keyboard shortcut to quickly mark currently viewed conversation
 
-### 🎨 **Theme Adaptive**
-- Supports **Auto/Light/Dark/Skyblue/Lavender** theme modes
-- Automatically follows system theme switching
-- Navigator colors perfectly blend with page style
-
 ### 🌐 **Multi-Platform Support**
 - ✅ **ChatGPT** (chatgpt.com)
 - ✅ **Claude** (claude.ai)
 - ✅ **Gemini** (gemini.google.com)
+- ✅ **DeepSeek** (chat.deepseek.com)
 - 🔧 Supports custom URLs (add other AI chat websites in settings)
+
+### 🎨 **Theme Adaptive**
+- Supports **Auto/Light/Dark/Skyblue/Lavender/Pink/Orange** theme modes
+- Automatically follows system theme switching
+- Navigator colors perfectly blend with page style
 
 ## 🚀 How to Use
 
 ### Install Extension
 1. Download and install **AI Chat Prompt Navigator** extension
-2. Open ChatGPT, Claude, or Gemini conversation page
+2. Open ChatGPT, Claude, Gemini, or DeepSeek conversation page
 3. A right-side conversation history bar will automatically appear on the page
 
 ### Basic Operations
@@ -78,7 +80,7 @@ When using AI chat tools like ChatGPT, Claude, or Gemini, have you ever encounte
 1. Right-click the extension icon in browser toolbar
 2. Select **"Options"** to enter settings page
 3. You can:
-   - Switch theme mode (Auto/Light/Dark/Skyblue/Lavender)
+   - Switch theme mode (Auto/Light/Dark/Skyblue/Lavender/Pink/Orange)
    - Enable/disable specific website support
    - Add custom AI chat website URLs
 
