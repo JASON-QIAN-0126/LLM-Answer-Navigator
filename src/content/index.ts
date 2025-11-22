@@ -2,6 +2,7 @@
 import { getActiveAdapter } from './siteAdapters/index';
 import { AnswerIndexManager } from './navigation/answerIndexManager';
 import { NavigatorUI } from './navigation/navigatorUI';
+import { scrollToAndHighlight } from './navigation/scrollAndHighlight';
 
 console.log('LLM Answer Navigator: Content script loaded');
 
@@ -32,8 +33,8 @@ function navigateToAnswer(index: number): void {
   const node = indexManager.getCurrentNode();
   
   if (node) {
-    // 简单滚动到该节点（后续将用更好的滚动和高亮模块替换）
-    node.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // 使用滚动和高亮模块
+    scrollToAndHighlight(node);
   }
   
   // 更新 UI 显示
