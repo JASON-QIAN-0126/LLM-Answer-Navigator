@@ -393,11 +393,10 @@ async function init() {
   }
   
   } finally {
-    // 只有当我是最新的 init 时，才重置标志
-    if (executionId === currentInitId) {
-      isInitializing = false;
-      initPromise = null; // 清除Promise引用
-    }
+    // 无论是否因为版本号不一致而提前返回，都必须重置初始化状态
+    // 否则会导致死锁，后续的 init 永远无法执行
+    isInitializing = false;
+    initPromise = null;
   }
   })();
   
