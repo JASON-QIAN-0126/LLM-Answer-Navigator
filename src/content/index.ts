@@ -124,18 +124,13 @@ function navigateToPrev(): void {
     return;
   }
   
-  // 如果已经在第一个，滚动到第一个的顶部
-  if (indexManager.getCurrentIndex() === 0) {
-    const node = indexManager.getCurrentNode();
-    if (node) {
-      scrollToAndHighlight(node);
-    }
-  } else {
-    // 否则跳转到上一个
-    if (indexManager.moveToPrev()) {
-      navigateToAnswer(indexManager.getCurrentIndex());
-    }
-  }
+  const currentIndex = indexManager.getCurrentIndex();
+  // 即使已经是第一个（index 0），也执行跳转（相当于滚动到顶部）
+  // 使用 Math.max 确保不小于 0
+  const targetIndex = Math.max(0, currentIndex - 1);
+  
+  // 统一使用 navigateToAnswer 以复用滚动锁定逻辑
+  navigateToAnswer(targetIndex);
 }
 
 /**
@@ -146,8 +141,13 @@ function navigateToNext(): void {
     return;
   }
   
-  if (indexManager.moveToNext()) {
-    navigateToAnswer(indexManager.getCurrentIndex());
+  const currentIndex = indexManager.getCurrentIndex();
+  const total = indexManager.getTotalCount();
+  
+  // 只有当不是最后一个时才跳转
+  if (currentIndex < total - 1) {
+    // 统一使用 navigateToAnswer 以复用滚动锁定逻辑
+    navigateToAnswer(currentIndex + 1);
   }
 }
 
