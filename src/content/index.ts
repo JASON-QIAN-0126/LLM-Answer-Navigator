@@ -287,8 +287,12 @@ async function init() {
   
   // 旧的悬浮按钮导航已被时间线导航替代，此处代码已移除
   
-  // 初始化索引管理器
-  indexManager = new AnswerIndexManager(adapter, document);
+  // 尝试查找更精确的根容器（通常是 <main>）以减少不必要的扫描和监听
+    const mainElement = document.querySelector('main');
+    const rootElement = mainElement || document.body;
+    
+    // 初始化索引管理器
+    indexManager = new AnswerIndexManager(adapter, rootElement);
   
   const totalCount = indexManager.getTotalCount();
   
@@ -376,7 +380,7 @@ async function init() {
     }
   }, 1000));
   
-  contentMutationObserver.observe(document.body, {
+  contentMutationObserver.observe(rootElement, {
     childList: true,
     subtree: true
   });
