@@ -220,10 +220,17 @@ function clearUI(): void {
 function getConversationId(): string {
   const pathname = window.location.pathname;
   
-  // 尝试从 URL 匹配 /c/UUID
-  const match = pathname.match(/\/c\/([a-zA-Z0-9-]+)/);
-  if (match && match[1]) {
-    return match[1];
+  // 尝试从 URL 匹配 /c/UUID (ChatGPT)
+  const matchC = pathname.match(/\/c\/([a-zA-Z0-9-]+)/);
+  if (matchC && matchC[1]) {
+    return matchC[1];
+  }
+
+  // 尝试从 URL 匹配 /a/chat/s/UUID (DeepSeek)
+  // 示例: /a/chat/s/8f0b40c6-a114-434e-adce-73b2aa5ccf73
+  const matchS = pathname.match(/\/s\/([a-zA-Z0-9-]+)/);
+  if (matchS && matchS[1]) {
+    return matchS[1];
   }
   
   // 如果是根路径，可能是新对话，尝试查找 meta 标签或特定元素

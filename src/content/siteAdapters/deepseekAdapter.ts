@@ -18,7 +18,14 @@ export const deepseekAdapter: SiteAdapter = {
     // DeepSeek 的 class 可能会变，建议使用 inspector 确认
     // 假设它也有类似的 user/assistant 角色区分
     // 这里先用一个比较通用的查询，实际需要根据 DeepSeek 页面调整
-    const userMessages = Array.from(root.querySelectorAll('.ds-user-message, .user-message, [role="user"]'));
+    const userMessages = Array.from(root.querySelectorAll([
+        '.ds-user-message', 
+        '.user-message', 
+        '[role="user"]',
+        'div[class*="message"][class*="user"]', // 尝试模糊匹配
+        '.ds-chat-message-user', // 另一种可能
+        '.chat-message-user'
+    ].join(',')));
     
     if (userMessages.length === 0) {
       // 如果找不到，尝试复用 ChatGPT 的选择器（很多 LLM 网站结构相似）
@@ -54,6 +61,9 @@ export const deepseekAdapter: SiteAdapter = {
         '.ds-user-message', 
         '.user-message', 
         '[role="user"]',
+        'div[class*="message"][class*="user"]',
+        '.ds-chat-message-user',
+        '.chat-message-user',
         '[data-message-author-role="user"]'
     ].join(',');
     return root.querySelectorAll(selectors).length;
