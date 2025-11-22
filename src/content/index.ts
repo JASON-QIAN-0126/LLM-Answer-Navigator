@@ -1,32 +1,33 @@
 // Content Script
-console.log('LLM Answer Navigator: Content script loaded');
+import { getActiveAdapter } from './siteAdapters/index';
 
-/**
- * 检测当前页面是否是 ChatGPT 对话页面
- */
-function isChatGPTPage(): boolean {
-  const { hostname, pathname } = window.location;
-  
-  // 检测是否是 ChatGPT 域名
-  const isChatGPT = hostname === 'chatgpt.com' || hostname === 'chat.openai.com';
-  
-  // 检测是否是对话页面（路径包含 /c/ 或者是根路径）
-  const isConversationPage = pathname === '/' || pathname.startsWith('/c/');
-  
-  return isChatGPT && isConversationPage;
-}
+console.log('LLM Answer Navigator: Content script loaded');
 
 /**
  * 初始化导航功能
  */
 function init() {
-  // 检测当前页面是否支持
-  if (!isChatGPTPage()) {
-    console.log('LLM Answer Navigator: 当前页面不是 ChatGPT 对话页面，跳过初始化');
+  // 获取当前页面适配的站点适配器
+  const adapter = getActiveAdapter(window.location);
+  
+  if (!adapter) {
+    console.log('LLM Answer Navigator: 当前页面不支持，跳过初始化');
     return;
   }
   
-  console.log('LLM Answer Navigator: ChatGPT 页面已检测到，准备初始化');
+  console.log(`LLM Answer Navigator: ${adapter.name} 页面已检测到，准备初始化`);
+  
+  // 查找所有 AI 回答节点
+  const answers = adapter.findAllAnswers(document);
+  console.log(`LLM Answer Navigator: 找到 ${answers.length} 个回答节点`);
+  
+  if (answers.length > 0) {
+    console.log('第一个回答节点信息:', {
+      tagName: answers[0].tagName,
+      className: answers[0].className,
+      textPreview: answers[0].textContent?.substring(0, 100)
+    });
+  }
   
   // 后续将在这里添加核心逻辑
 }
