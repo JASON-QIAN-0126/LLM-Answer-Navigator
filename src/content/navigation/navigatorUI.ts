@@ -255,12 +255,6 @@ export class NavigatorUI {
     this.currentThemeMode = mode;
     const actualTheme = resolveTheme(mode);
     this.applyTheme(actualTheme);
-    
-    if (mode === 'auto') {
-      console.log(`🎨 主题模式: 跟随系统 (当前: ${themes[actualTheme].name})`);
-    } else {
-      console.log(`🎨 主题已切换为: ${themes[actualTheme].name}`);
-    }
   }
 
   /**
@@ -299,7 +293,6 @@ export class NavigatorUI {
       // 只在"auto"模式下才响应系统主题变化
       if (this.currentThemeMode === 'auto') {
         const newTheme = e.matches ? 'dark' : 'light';
-        console.log(`🌓 系统主题已变化，切换到: ${themes[newTheme].name}`);
         this.applyTheme(newTheme);
       }
     };
@@ -362,12 +355,10 @@ export class NavigatorUI {
       this.container.style.opacity = '0';
       this.container.style.pointerEvents = 'none';
       this.container.style.transform = 'translateX(120%)';
-      console.log('🙈 导航面板已隐藏');
     } else {
       this.container.style.opacity = '1';
       this.container.style.pointerEvents = 'auto';
       this.container.style.transform = 'translateX(0)';
-      console.log('👁️ 导航面板已显示');
     }
   }
 
