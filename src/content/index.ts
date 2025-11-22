@@ -508,5 +508,5 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse({ success: true });
   }
   
-  return true; // 保持消息通道打开
+  // 所有消息都同步处理完成，不需要返回 true
 });
