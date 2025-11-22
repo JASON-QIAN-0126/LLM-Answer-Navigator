@@ -4,8 +4,6 @@ import { AnswerIndexManager } from './navigation/answerIndexManager';
 import { RightSideTimelineNavigator } from './navigation/rightSideTimelineNavigator';
 import { scrollToAndHighlight } from './navigation/scrollAndHighlight';
 
-console.log('LLM Answer Navigator: Content script loaded');
-
 let indexManager: AnswerIndexManager | null = null;
 let timelineNavigator: RightSideTimelineNavigator | null = null;
 let isInitializing = false; // 防止重复初始化
@@ -33,7 +31,6 @@ function debounce<T extends (...args: any[]) => void>(
  */
 function navigateToAnswer(index: number): void {
   if (!indexManager) {
-    console.warn('⚠️ indexManager 未初始化');
     return;
   }
   
@@ -43,14 +40,9 @@ function navigateToAnswer(index: number): void {
   indexManager.setCurrentIndex(index);
   const node = indexManager.getCurrentNode();
   
-  console.log(`🎯 导航到第 ${index + 1}/${indexManager.getTotalCount()} 个问题`);
-  
   if (node) {
-    console.log('✅ 找到目标节点，开始滚动和高亮');
     // 使用滚动和高亮模块
     scrollToAndHighlight(node);
-  } else {
-    console.error('❌ 未找到目标节点');
   }
   
   // 更新 UI 显示
@@ -66,15 +58,12 @@ function navigateToAnswer(index: number): void {
  * 导航到上一个问题
  */
 function navigateToPrev(): void {
-  console.log('⬆️ 触发：上一个问题');
   if (!indexManager || indexManager.getTotalCount() === 0) {
-    console.log('⚠️ 没有可导航的问题');
     return;
   }
   
   // 如果已经在第一个，滚动到第一个的顶部
   if (indexManager.getCurrentIndex() === 0) {
-    console.log('📍 已经是第一个问题，滚动到顶部');
     const node = indexManager.getCurrentNode();
     if (node) {
       scrollToAndHighlight(node);
@@ -91,16 +80,12 @@ function navigateToPrev(): void {
  * 导航到下一个问题
  */
 function navigateToNext(): void {
-  console.log('⬇️ 触发：下一个问题');
   if (!indexManager || indexManager.getTotalCount() === 0) {
-    console.log('⚠️ 没有可导航的问题');
     return;
   }
   
   if (indexManager.moveToNext()) {
     navigateToAnswer(indexManager.getCurrentIndex());
-  } else {
-    console.log('ℹ️ 已经是最后一个问题');
   }
 }
 
@@ -124,8 +109,6 @@ const handleResize = debounce(() => {
     
     // 刷新时间线节点位置
     timelineNavigator.refreshPositions();
-    
-    console.log('🔄 窗口大小变化，已更新时间线节点位置');
   }
 }, 300);
 
@@ -150,7 +133,6 @@ const handleScroll = debounce(() => {
  */
 function clearUI(): void {
   if (timelineNavigator) {
-    console.log('🧹 清理旧的时间线导航器');
     timelineNavigator.destroy();
     timelineNavigator = null;
   }
@@ -159,7 +141,6 @@ function clearUI(): void {
   if (contentMutationObserver) {
     contentMutationObserver.disconnect();
     contentMutationObserver = null;
-    console.log('🔌 MutationObserver 已断开');
   }
   
   // 移除事件监听器，防止内存泄漏
@@ -220,8 +201,6 @@ function initTimelineNavigator(): void {
   
   // 注册节点点击事件
   timelineNavigator.onNodeClick((itemIndex: number) => {
-    console.log(`🖱️ Timeline: 点击了节点 ${itemIndex + 1}`);
-    
     // 复用 navigateToAnswer 函数，统一管理锁逻辑
     navigateToAnswer(itemIndex);
   });
@@ -230,7 +209,6 @@ function initTimelineNavigator(): void {
   const items = indexManager.getItems();
   timelineNavigator.init(items);
   timelineNavigator.updateActiveIndex(indexManager.getCurrentIndex());
-  console.log(`✅ 时间线初始化/更新完成，节点数: ${items.length}`);
 }
 
 /**
