@@ -16,13 +16,13 @@ export interface TimelineTheme {
 export const themes: Record<string, TimelineTheme> = {
   light: {
     name: '亮色',
-    activeColor: '#29B6F6', // 浅蓝 (原绿色)
+    activeColor: '#29B6F6', // 浅蓝
     activeShadow: 'rgba(41, 182, 246, 0.5)',
-    defaultNodeColor: '#888888', // 灰色
+    defaultNodeColor: '#dbdbdb', // 浅灰色
     timelineBarColor: 'rgba(150, 150, 150, 0.3)',
-    pinnedColor: '#0277BD', // 深蓝 (原橘色)
+    pinnedColor: '#0277BD', // 深蓝
     tooltipBackgroundColor: 'rgba(255, 255, 255, 0.95)',
-    tooltipTextColor: '#0277BD' // 跟随重点色
+    tooltipTextColor: '#FFFFFF' // 白色
   },
   dark: {
     name: '暗色',
