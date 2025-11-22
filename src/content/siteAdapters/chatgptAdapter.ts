@@ -1,4 +1,4 @@
-import type { SiteAdapter } from './index';
+import type { SiteAdapter, PromptAnswerPair } from './index';
 
 /**
  * ChatGPT 站点适配器
@@ -22,21 +22,21 @@ export const chatgptAdapter: SiteAdapter = {
   },
   
   /**
-   * 在 ChatGPT 页面中查找所有 AI 回答节点
+   * 在 ChatGPT 页面中查找所有用户问题节点
    * 
    * ChatGPT 的 DOM 结构说明：
-   * - AI 回答通常在一个包含特定 data-* 属性的 div 中
-   * - 可以通过 data-message-author-role="assistant" 来识别
+   * - 用户问题通常在一个包含 data-message-author-role="user" 的 div 中
+   * - 跳转到用户问题可以更好地回顾对话上下文
    * - 需要排除输入框、顶部导航等非对话内容
    */
   findAllAnswers(root: Document | HTMLElement): HTMLElement[] {
-    const answers: HTMLElement[] = [];
+    const userQuestions: HTMLElement[] = [];
     const foundMethods: string[] = [];
     
     /**
      * 过滤掉非对话内容
      */
-    const isValidAnswer = (element: HTMLElement): boolean => {
+    const isValidQuestion = (element: HTMLElement): boolean => {
       // 排除输入框区域（通常包含 textarea 或 contenteditable）
       if (element.querySelector('textarea') || 
           element.querySelector('[contenteditable="true"]') ||
@@ -45,98 +45,191 @@ export const chatgptAdapter: SiteAdapter = {
       }
       
       // 排除顶部模型选择器等导航元素
-      // 通常在页面顶部，且位置固定
       const rect = element.getBoundingClientRect();
       if (rect.top < 100 && rect.height < 100) {
         return false;
       }
       
-      // 排除太小的元素（可能是按钮、图标等）
+      // 排除太小的元素
       const textContent = element.textContent?.trim() || '';
-      if (textContent.length < 10) {
-        return false;
-      }
-      
-      // 排除只包含简短文本的元素（如 "ChatGPT 4o"）
-      if (textContent.length < 30 && !element.querySelector('pre, code, ol, ul')) {
+      if (textContent.length < 1) {
         return false;
       }
       
       return true;
     };
     
-    // 方法 1: 尝试通过 data-message-author-role 属性查找（最可靠）
-    const messageElements = root.querySelectorAll('[data-message-author-role="assistant"]');
-    if (messageElements.length > 0) {
-      foundMethods.push(`data-message-author-role (${messageElements.length})`);
-      messageElements.forEach(el => {
-        if (el instanceof HTMLElement && isValidAnswer(el)) {
-          answers.push(el);
+    // 方法 1: 通过 data-message-author-role="user" 查找用户问题（最可靠）
+    const userMessageElements = root.querySelectorAll('[data-message-author-role="user"]');
+    if (userMessageElements.length > 0) {
+      foundMethods.push(`data-message-author-role=user (${userMessageElements.length})`);
+      userMessageElements.forEach(el => {
+        if (el instanceof HTMLElement && isValidQuestion(el)) {
+          userQuestions.push(el);
         }
       });
     }
     
-    // 方法 2: 查找包含 assistant 回答的对话组容器
-    if (answers.length === 0) {
+    // 方法 2: 查找包含用户问题的对话组容器
+    if (userQuestions.length === 0) {
       const conversationTurns = root.querySelectorAll('[data-testid^="conversation-turn"]');
       conversationTurns.forEach(turn => {
         if (turn instanceof HTMLElement) {
-          // 必须包含 assistant 标记
-          const hasAssistant = turn.querySelector('[data-message-author-role="assistant"]');
+          // 查找包含用户标记的容器
+          const hasUserMessage = turn.querySelector('[data-message-author-role="user"]');
           
-          if (hasAssistant && isValidAnswer(turn)) {
-            answers.push(turn);
+          if (hasUserMessage && isValidQuestion(turn)) {
+            userQuestions.push(turn);
           }
         }
       });
-      if (answers.length > 0) {
-        foundMethods.push(`conversation-turn (${answers.length})`);
+      if (userQuestions.length > 0) {
+        foundMethods.push(`conversation-turn-user (${userQuestions.length})`);
       }
     }
     
-    // 方法 3: 查找 main 标签内的对话内容（限定在对话区域）
-    if (answers.length === 0) {
+    // 方法 3: 通过结构查找用户问题（偶数索引通常是用户）
+    if (userQuestions.length === 0) {
       const mainElement = root.querySelector('main');
       if (mainElement) {
-        // 查找对话容器中的 article 元素（ChatGPT 使用 article 包裹对话）
         const articles = mainElement.querySelectorAll('article');
         articles.forEach((article, index) => {
-          if (article instanceof HTMLElement && isValidAnswer(article)) {
-            // 检查是否是 AI 回答（通常偶数索引，或包含特定标记）
-            const hasAssistantMarker = article.querySelector('[data-message-author-role="assistant"]');
-            const isOddIndex = index % 2 === 1;
+          if (article instanceof HTMLElement && isValidQuestion(article)) {
+            // 检查是否是用户消息（通常偶数索引）
+            const hasUserMarker = article.querySelector('[data-message-author-role="user"]');
+            const isEvenIndex = index % 2 === 0;
             
-            if (hasAssistantMarker || isOddIndex) {
-              answers.push(article);
+            if (hasUserMarker || isEvenIndex) {
+              userQuestions.push(article);
             }
           }
         });
       }
-      if (answers.length > 0) {
-        foundMethods.push(`article-based (${answers.length})`);
+      if (userQuestions.length > 0) {
+        foundMethods.push(`article-based-user (${userQuestions.length})`);
       }
     }
     
-    // 去重（有些方法可能找到重复的元素）
-    const uniqueAnswers = Array.from(new Set(answers));
+    // 去重
+    const uniqueQuestions = Array.from(new Set(userQuestions));
     
     // 调试信息
-    if (uniqueAnswers.length > 0) {
-      console.log(`✅ ChatGPT Adapter: 找到 ${uniqueAnswers.length} 个 AI 回答节点 [方法: ${foundMethods.join(', ')}]`);
-      if (uniqueAnswers.length > 0) {
-        console.log('第一个回答节点:', {
-          tag: uniqueAnswers[0].tagName,
-          classes: uniqueAnswers[0].className,
-          textPreview: uniqueAnswers[0].textContent?.substring(0, 50) + '...',
-          hasTextarea: !!uniqueAnswers[0].querySelector('textarea'),
-          hasForm: !!uniqueAnswers[0].querySelector('form')
+    if (uniqueQuestions.length > 0) {
+      console.log(`✅ ChatGPT Adapter: 找到 ${uniqueQuestions.length} 个用户问题节点 [方法: ${foundMethods.join(', ')}]`);
+      if (uniqueQuestions.length > 0) {
+        console.log('第一个问题节点:', {
+          tag: uniqueQuestions[0].tagName,
+          classes: uniqueQuestions[0].className,
+          textPreview: uniqueQuestions[0].textContent?.substring(0, 50) + '...',
+          hasTextarea: !!uniqueQuestions[0].querySelector('textarea'),
+          hasForm: !!uniqueQuestions[0].querySelector('form')
         });
       }
     } else {
-      console.warn('⚠️ ChatGPT Adapter: 未找到任何 AI 回答节点，请检查页面结构');
+      console.warn('⚠️ ChatGPT Adapter: 未找到任何用户问题节点，请检查页面结构');
     }
     
-    return uniqueAnswers;
+    return uniqueQuestions;
+  },
+
+  /**
+   * 获取页面中所有的「用户问题 + AI 回答」配对
+   * 
+   * 改进逻辑：
+   * 1. 以用户问题 (role=user) 为核心锚点
+   * 2. 只要找到用户问题，就生成一个条目
+   * 3. 尝试在用户问题后面寻找对应的 AI 回答，如果找不到也不影响节点生成
+   */
+  getPromptAnswerPairs(root: Document | HTMLElement): PromptAnswerPair[] {
+    const pairs: PromptAnswerPair[] = [];
+    
+    /**
+     * 辅助函数：计算元素相对于文档顶部的偏移量
+     */
+    const getTopOffset = (element: HTMLElement): number => {
+      const rect = element.getBoundingClientRect();
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      return rect.top + scrollTop;
+    };
+    
+    /**
+     * 辅助函数：提取文本内容（去除多余空白）
+     */
+    const extractText = (element: HTMLElement): string => {
+      return element.textContent?.trim().replace(/\s+/g, ' ') || '';
+    };
+    
+    /**
+     * 辅助函数：检查是否是有效的对话节点
+     */
+    const isValidNode = (element: HTMLElement): boolean => {
+      // 排除输入框区域
+      if (element.querySelector('textarea') || 
+          element.querySelector('[contenteditable="true"]') ||
+          element.querySelector('form')) {
+        return false;
+      }
+      
+      // 排除太小的元素（例如空 div）
+      const text = extractText(element);
+      if (text.length < 1) {
+        return false;
+      }
+      
+      return true;
+    };
+
+    // 1. 获取所有带有 author-role 的消息元素
+    const allMessages = Array.from(root.querySelectorAll('[data-message-author-role]'));
+    
+    // 2. 筛选出所有用户问题
+    const userMessages = allMessages.filter(el => 
+      el.getAttribute('data-message-author-role') === 'user' && 
+      el instanceof HTMLElement && 
+      isValidNode(el)
+    ) as HTMLElement[];
+
+    console.log(`🔍 ChatGPT Adapter: 扫描到 ${userMessages.length} 个用户问题`);
+
+    // 3. 为每个用户问题构建配对
+    userMessages.forEach((userMsg, index) => {
+      const promptText = extractText(userMsg);
+      
+      // 尝试查找对应的 assistant 回答
+      // 逻辑：在 allMessages 中找到当前 userMsg 的位置，然后向后找最近的一个 assistant
+      const msgIndex = allMessages.indexOf(userMsg);
+      let answerNode = userMsg; // 默认 fallback 到 userMsg
+      
+      for (let i = msgIndex + 1; i < allMessages.length; i++) {
+        const nextMsg = allMessages[i];
+        const role = nextMsg.getAttribute('data-message-author-role');
+        
+        if (role === 'assistant') {
+          answerNode = nextMsg as HTMLElement;
+          break; // 找到第一个 assistant 就停止
+        } else if (role === 'user') {
+          break; // 如果遇到下一个 user，说明当前 prompt 没有回答（或结构断了），停止寻找
+        }
+      }
+
+      // 构建配对对象
+      pairs.push({
+        id: `pair-${index}-${Date.now()}`,
+        promptNode: userMsg,
+        promptText: promptText,
+        answerNode: answerNode, // 如果没找到回答，这里就是 promptNode 自身
+        topOffset: getTopOffset(userMsg) // 关键：位置以 prompt 为准
+      });
+    });
+    
+    // 调试信息
+    if (pairs.length > 0) {
+      console.log(`✅ ChatGPT Adapter: 成功构建 ${pairs.length} 个导航节点`);
+    } else {
+      console.warn('⚠️ ChatGPT Adapter: 未生成任何导航节点，请检查 data-message-author-role="user" 选择器是否有效');
+    }
+    
+    return pairs;
   }
 };
 

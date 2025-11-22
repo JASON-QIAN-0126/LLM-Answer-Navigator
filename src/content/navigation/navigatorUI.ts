@@ -21,8 +21,8 @@ export class NavigatorUI {
 
   constructor() {
     this.container = this.createContainer();
-    this.prevButton = this.createButton('↑', '上一条回答');
-    this.nextButton = this.createButton('↓', '下一条回答');
+    this.prevButton = this.createButton('↑', '上一个问题');
+    this.nextButton = this.createButton('↓', '下一个问题');
     this.indexDisplay = this.createIndexDisplay();
     
     this.setupUI();
@@ -151,9 +151,9 @@ export class NavigatorUI {
       if (this.currentIndex === 0) {
         this.prevButton.title = this.totalCount === 1 
           ? '滚动到顶部' 
-          : '已经是第一条（点击滚动到顶部）';
+          : '已经是第一个（点击滚动到顶部）';
       } else {
-        this.prevButton.title = this.prevButton.dataset.originalTitle || '上一条回答';
+        this.prevButton.title = this.prevButton.dataset.originalTitle || '上一个问题';
       }
       
       // 向下按钮：只有在有多条对话且不是最后一条时可用

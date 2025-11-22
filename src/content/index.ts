@@ -1,14 +1,16 @@
 // Content Script
 import { getActiveAdapter } from './siteAdapters/index';
 import { AnswerIndexManager } from './navigation/answerIndexManager';
-import { NavigatorUI } from './navigation/navigatorUI';
+import { RightSideTimelineNavigator } from './navigation/rightSideTimelineNavigator';
 import { scrollToAndHighlight } from './navigation/scrollAndHighlight';
 
 console.log('LLM Answer Navigator: Content script loaded');
 
 let indexManager: AnswerIndexManager | null = null;
-let navigatorUI: NavigatorUI | null = null;
+let timelineNavigator: RightSideTimelineNavigator | null = null;
 let isInitializing = false; // 防止重复初始化
+let isListLocked = false; // 标记列表是否已锁定（固定总数）
+let isManualScrolling = false; // 标记是否正在进行点击导航滚动
 
 /**
  * 防抖函数
@@ -25,7 +27,7 @@ function debounce<T extends (...args: any[]) => void>(
 }
 
 /**
- * 导航到指定的回答
+ * 导航到指定的问题
  */
 function navigateToAnswer(index: number): void {
   if (!indexManager) {
@@ -33,10 +35,13 @@ function navigateToAnswer(index: number): void {
     return;
   }
   
+  // 标记开始手动导航，暂时屏蔽滚动监听的干扰
+  isManualScrolling = true;
+  
   indexManager.setCurrentIndex(index);
   const node = indexManager.getCurrentNode();
   
-  console.log(`🎯 导航到第 ${index + 1}/${indexManager.getTotalCount()} 个回答`);
+  console.log(`🎯 导航到第 ${index + 1}/${indexManager.getTotalCount()} 个问题`);
   
   if (node) {
     console.log('✅ 找到目标节点，开始滚动和高亮');
@@ -48,27 +53,32 @@ function navigateToAnswer(index: number): void {
   
   // 更新 UI 显示
   updateUI();
+  
+  // 1秒后释放锁（给足够的时间让滚动动画完成）
+  setTimeout(() => {
+    isManualScrolling = false;
+  }, 1000);
 }
 
 /**
- * 导航到上一条回答
+ * 导航到上一个问题
  */
 function navigateToPrev(): void {
-  console.log('⬆️ 触发：上一条回答');
+  console.log('⬆️ 触发：上一个问题');
   if (!indexManager || indexManager.getTotalCount() === 0) {
-    console.log('⚠️ 没有可导航的回答');
+    console.log('⚠️ 没有可导航的问题');
     return;
   }
   
-  // 如果已经在第一条，滚动到第一条的顶部
+  // 如果已经在第一个，滚动到第一个的顶部
   if (indexManager.getCurrentIndex() === 0) {
-    console.log('📍 已经是第一条，滚动到顶部');
+    console.log('📍 已经是第一个问题，滚动到顶部');
     const node = indexManager.getCurrentNode();
     if (node) {
       scrollToAndHighlight(node);
     }
   } else {
-    // 否则跳转到上一条
+    // 否则跳转到上一个
     if (indexManager.moveToPrev()) {
       navigateToAnswer(indexManager.getCurrentIndex());
     }
@@ -76,43 +86,103 @@ function navigateToPrev(): void {
 }
 
 /**
- * 导航到下一条回答
+ * 导航到下一个问题
  */
 function navigateToNext(): void {
-  console.log('⬇️ 触发：下一条回答');
+  console.log('⬇️ 触发：下一个问题');
   if (!indexManager || indexManager.getTotalCount() === 0) {
-    console.log('⚠️ 没有可导航的回答');
+    console.log('⚠️ 没有可导航的问题');
     return;
   }
   
   if (indexManager.moveToNext()) {
     navigateToAnswer(indexManager.getCurrentIndex());
   } else {
-    console.log('ℹ️ 已经是最后一条回答');
+    console.log('ℹ️ 已经是最后一个问题');
   }
 }
 
 /**
- * 更新 UI 显示
+ * 更新 UI 显示（现在只更新时间线）
  */
 function updateUI(): void {
-  if (navigatorUI && indexManager) {
-    navigatorUI.updateIndex(
-      indexManager.getCurrentIndex(),
-      indexManager.getTotalCount()
-    );
+  // 同步更新时间线 active 状态
+  if (timelineNavigator && indexManager) {
+    timelineNavigator.updateActiveIndex(indexManager.getCurrentIndex());
   }
 }
+
+/**
+ * 处理窗口 resize 事件
+ */
+const handleResize = debounce(() => {
+  if (indexManager && timelineNavigator) {
+    // 重新计算相对位置
+    indexManager.refresh();
+    
+    // 刷新时间线节点位置
+    timelineNavigator.refreshPositions();
+    
+    console.log('🔄 窗口大小变化，已更新时间线节点位置');
+  }
+}, 300);
 
 /**
  * 处理滚动事件
  */
 const handleScroll = debounce(() => {
+  // 如果正在执行点击导航，忽略滚动事件，防止覆盖目标索引
+  if (isManualScrolling) {
+    return;
+  }
+
   if (indexManager) {
     indexManager.updateCurrentIndexByScroll(window.scrollY);
     updateUI();
   }
-}, 200);
+}, 100);
+
+/**
+ * 清理 UI
+ * 在重新初始化或切换对话时调用，移除旧的时间线节点
+ */
+function clearUI(): void {
+  if (timelineNavigator) {
+    console.log('🧹 清理旧的时间线导航器');
+    timelineNavigator.destroy();
+    timelineNavigator = null;
+  }
+  // 重置 indexManager，避免持有旧的 DOM 引用
+  indexManager = null;
+}
+
+/**
+ * 初始化时间线导航器
+ */
+function initTimelineNavigator(): void {
+  if (!indexManager) return;
+  
+  // 再次确保旧的被清理
+  if (timelineNavigator) {
+    timelineNavigator.destroy();
+  }
+  
+  timelineNavigator = new RightSideTimelineNavigator();
+  
+  // 注册节点点击事件
+  timelineNavigator.onNodeClick((itemIndex: number) => {
+    console.log(`🖱️ Timeline: 点击了节点 ${itemIndex + 1}`);
+    
+    // 复用 navigateToAnswer 函数，统一管理锁逻辑
+    navigateToAnswer(itemIndex);
+  });
+  
+  // 传入所有 Prompt-Answer 条目
+  const items = indexManager.getItems();
+  timelineNavigator.init(items);
+  timelineNavigator.updateActiveIndex(indexManager.getCurrentIndex());
+  console.log(`✅ 时间线初始化/更新完成，节点数: ${items.length}`);
+}
 
 /**
  * 初始化导航功能
@@ -123,6 +193,9 @@ async function init() {
     console.log('⏳ 正在初始化中，跳过重复调用');
     return;
   }
+  
+  // 先清理旧 UI，给用户一个“正在加载”的空白状态
+  clearUI();
   
   isInitializing = true;
   
@@ -153,46 +226,97 @@ async function init() {
       // 如果读取配置失败，默认继续执行
     }
   
-  // 初始化导航 UI（先显示加载状态）
-  if (!navigatorUI) {
-    navigatorUI = new NavigatorUI();
-    navigatorUI.onPrev(navigateToPrev);
-    navigatorUI.onNext(navigateToNext);
-  }
-  navigatorUI.setLoading(true);
+  // 旧的悬浮按钮导航已被时间线导航替代，此处代码已移除
   
   // 初始化索引管理器
   indexManager = new AnswerIndexManager(adapter, document);
   
   const totalCount = indexManager.getTotalCount();
-  console.log(`LLM Answer Navigator: 初始化完成，共 ${totalCount} 个回答`);
+  console.log(`LLM Answer Navigator: 初始化完成，共 ${totalCount} 个问题`);
   
-  // 根据当前滚动位置设置初始索引
-  // ChatGPT 切换对话后通常会滚动到底部，所以我们需要正确设置当前索引
+  // 如果扫描到问题，立即锁定列表（不再自动刷新）
   if (totalCount > 0) {
+    isListLocked = true;
+    console.log('🔒 问题列表已锁定，总数固定为:', totalCount);
+    
+    // 根据当前滚动位置设置初始索引
     indexManager.updateCurrentIndexByScroll(window.scrollY);
-    console.log(`📍 初始位置: 第 ${indexManager.getCurrentIndex() + 1}/${totalCount} 个回答`);
+    console.log(`📍 初始位置: 第 ${indexManager.getCurrentIndex() + 1}/${totalCount} 个问题`);
+  } else {
+    // 如果没有找到问题，不锁定，允许后续自动刷新
+    isListLocked = false;
+    console.warn('⚠️ 未找到任何问题，将在5秒内自动重试');
   }
   
-  // 取消加载状态，更新 UI
-  navigatorUI.setLoading(false);
-  updateUI();
+  // 旧的 UI 更新已移除，使用时间线导航
   
-  if (totalCount === 0) {
-    console.warn('⚠️ 未找到任何回答，请检查页面是否已加载完成');
+  // ========== 初始化右侧时间线导航器 (仅当找到节点时) ==========
+  if (totalCount > 0) {
+    initTimelineNavigator();
+  } else {
+    console.log('⏳ 暂未找到问题，等待后续扫描初始化时间线');
   }
+  // ========== 时间线初始化逻辑调整结束 ==========
   
   // 监听滚动事件
-  window.addEventListener('scroll', handleScroll, { passive: true });
+  // 使用 capture: true 捕获所有子元素的滚动事件（包括 ChatGPT 内部容器的滚动）
+  document.addEventListener('scroll', handleScroll, { passive: true, capture: true });
   
-  // 监听 DOM 变化，以便在新回答出现时刷新
+  // 监听窗口 resize 事件
+  window.addEventListener('resize', handleResize, { passive: true });
+  
+  // 智能刷新：支持新对话动态添加
+  // 一旦扫描到问题，就锁定列表，但会检测数量增加的情况
   const observer = new MutationObserver(debounce(() => {
-    if (indexManager && indexManager.needsRefresh()) {
-      console.log('🔄 检测到页面变化，刷新回答列表');
-      indexManager.refresh();
-      // 刷新后重新检测当前位置
-      indexManager.updateCurrentIndexByScroll(window.scrollY);
-      updateUI();
+    if (!indexManager) return;
+
+    // 如果列表已锁定，检查是否是新消息（数量增加）
+    if (isListLocked) {
+      // 检测是否需要刷新（即实际数量是否发生变化）
+      if (indexManager.needsRefresh()) {
+        // 先获取旧的数量
+        const oldCount = indexManager.getTotalCount();
+        
+        // 刷新数据
+        indexManager.refresh();
+        const newCount = indexManager.getTotalCount();
+        
+        // 如果数量增加了，说明有新对话
+        if (newCount > oldCount) {
+          console.log(`🆕 检测到新对话: ${oldCount} -> ${newCount}`);
+          
+          // 重新初始化时间线（RightSideTimelineNavigator 会处理节点重绘和布局）
+          initTimelineNavigator();
+          
+          // 自动滚动到底部（通常新消息在最下面）
+          // 并选中最后一个节点
+          indexManager.setCurrentIndex(newCount - 1);
+          updateUI();
+        }
+      }
+      return;
+    }
+    
+    // 只有在问题数为0时才尝试刷新（说明页面可能还在加载）
+    if (indexManager.getTotalCount() === 0) {
+      if (indexManager.needsRefresh()) {
+        console.log('🔄 页面可能还在加载，尝试重新扫描问题');
+        indexManager.refresh();
+        const newCount = indexManager.getTotalCount();
+        
+        if (newCount > 0) {
+          // 找到问题后立即锁定
+          isListLocked = true;
+          console.log(`✅ 扫描到 ${newCount} 个问题，列表已锁定`);
+          indexManager.updateCurrentIndexByScroll(window.scrollY);
+          
+          // ============ 延迟初始化的时间线 ============
+          initTimelineNavigator();
+          // ========================================
+          
+          updateUI();
+        }
+      }
     }
   }, 1000));
   
@@ -200,6 +324,16 @@ async function init() {
     childList: true,
     subtree: true
   });
+  
+  // 如果初次扫描未找到问题，5秒后停止自动刷新
+  if (totalCount === 0) {
+    setTimeout(() => {
+      if (!isListLocked) {
+        console.log('⏱️ 超时：停止自动扫描，请手动刷新页面或切换对话');
+        isListLocked = true;
+      }
+    }, 5000);
+  }
   
   } finally {
     isInitializing = false;
@@ -211,13 +345,14 @@ let lastUrl = window.location.href;
 const urlObserver = new MutationObserver(() => {
   const currentUrl = window.location.href;
   if (currentUrl !== lastUrl) {
-    console.log('🔄 检测到 URL 变化，重新初始化');
+    console.log('🔄 检测到 URL 变化，准备重新初始化');
     lastUrl = currentUrl;
     
-    // 设置加载状态（保留 UI，不销毁）
-    if (navigatorUI) {
-      navigatorUI.setLoading(true);
-    }
+    // 立即清理 UI，防止新旧节点混淆
+    clearUI();
+    
+    // 解锁列表，允许新对话重新扫描
+    isListLocked = false;
     
     // 延迟重新初始化，等待页面内容加载
     setTimeout(() => {
@@ -260,20 +395,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     navigateToNext();
     sendResponse({ success: true });
   } else if (message.type === 'LLM_NAV_TOGGLE_UI') {
-    console.log('快捷键触发：切换导航面板显示');
-    if (navigatorUI) {
-      navigatorUI.toggle();
-      sendResponse({ success: true, hidden: navigatorUI.getHiddenState() });
-    } else {
-      sendResponse({ success: false, error: 'UI not initialized' });
-    }
-  } else if (message.type === 'LLM_NAV_THEME_CHANGED') {
-    console.log('主题已更改:', message.theme);
-    if (navigatorUI) {
-      navigatorUI.setThemeMode(message.theme);
+    console.log('快捷键触发：切换时间线导航显示');
+    if (timelineNavigator) {
+      timelineNavigator.toggle();
       sendResponse({ success: true });
     } else {
-      sendResponse({ success: false, error: 'UI not initialized' });
+      sendResponse({ success: false, error: 'Timeline not initialized' });
     }
   }
   

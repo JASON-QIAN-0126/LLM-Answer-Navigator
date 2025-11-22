@@ -1,4 +1,21 @@
 /**
+ * Prompt-Answer 成对数据结构
+ * 用于时间线导航，记录用户问题和对应的 AI 回答
+ */
+export interface PromptAnswerPair {
+  /** 对话内唯一 ID（用于标记等功能） */
+  id: string;
+  /** 用户问题所在的 DOM 节点 */
+  promptNode: HTMLElement;
+  /** 用户问题的文本内容 */
+  promptText: string;
+  /** 对应 AI 回答的 DOM 节点 */
+  answerNode: HTMLElement;
+  /** 问题在文档中的位置（用于排序） */
+  topOffset: number;
+}
+
+/**
  * 站点适配器接口
  * 每个站点适配器需要实现这个接口
  * 
@@ -17,11 +34,26 @@ export interface SiteAdapter {
   isSupported(location: Location): boolean;
   
   /**
-   * 在页面中查找所有 AI 回答节点
+   * 在页面中查找所有用户问题节点（用于导航跳转）
    * @param root - 根节点，通常是 document 或某个容器元素
-   * @returns AI 回答节点数组
+   * @returns 用户问题节点数组
+   * @deprecated 建议使用 getPromptAnswerPairs 获取完整的对话对
    */
   findAllAnswers(root: Document | HTMLElement): HTMLElement[];
+  
+  /**
+   * 获取页面中所有的「用户问题 + AI 回答」配对
+   * @param root - 根节点，通常是 document 或某个容器元素
+   * @returns Prompt-Answer 配对数组
+   */
+  getPromptAnswerPairs(root: Document | HTMLElement): PromptAnswerPair[];
+
+  /**
+   * 获取当前页面的主要滚动容器
+   * 用于计算相对位置和监听滚动事件
+   * @param root - 根节点
+   */
+  getScrollContainer?(root: Document | HTMLElement): HTMLElement;
   
   /**
    * 适配器名称
