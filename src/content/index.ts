@@ -405,7 +405,11 @@ async function init() {
 
 // 监听 URL 变化（用于检测切换对话）
 let lastUrl = window.location.href;
-const urlObserver = new MutationObserver(() => {
+
+/**
+ * 处理 URL 变化
+ */
+function handleUrlChange() {
   const currentUrl = window.location.href;
   if (currentUrl !== lastUrl) {
     lastUrl = currentUrl;
@@ -421,20 +425,21 @@ const urlObserver = new MutationObserver(() => {
       init();
     }, 1000);
   }
-});
+}
 
-// 监听整个文档的变化以检测 URL 改变
-urlObserver.observe(document.documentElement, {
-  childList: true,
-  subtree: true
-});
+// 使用轮询检测 URL 变化 (替代昂贵的全局 MutationObserver)
+setInterval(handleUrlChange, 1000);
 
-// 同时监听 popstate 事件（浏览器前进后退）
+// 监听 popstate 事件（浏览器前进后退）
 window.addEventListener('popstate', () => {
-  setTimeout(() => {
-    init();
-  }, 500);
+  // 给一点时间让 URL 更新
+  setTimeout(handleUrlChange, 100);
 });
+
+// 监听点击事件，以便在点击链接时更快响应
+document.addEventListener('click', () => {
+  setTimeout(handleUrlChange, 200);
+}, { capture: true, passive: true });
 
 // 页面加载完成后初始化
 if (document.readyState === 'loading') {
