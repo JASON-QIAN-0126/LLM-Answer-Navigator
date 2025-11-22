@@ -5,37 +5,193 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LLM Answer Navigator</title>
   <style>
+    :root {
+      --primary-color: #4CAF50;
+      --bg-color: #ffffff;
+      --text-color: #333333;
+      --sub-text-color: #666666;
+      --border-color: #eeeeee;
+      --key-bg: #f5f5f5;
+      --key-border: #e0e0e0;
+    }
+
     body {
-      width: 300px;
-      padding: 15px;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      width: 320px;
+      margin: 0;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
     }
+
+    .header {
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
     h2 {
-      margin: 0 0 10px 0;
-      font-size: 16px;
+      margin: 0 0 6px 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-color);
     }
-    p {
-      margin: 5px 0;
+
+    .desc {
+      margin: 0;
+      font-size: 13px;
+      color: var(--sub-text-color);
+    }
+
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--sub-text-color);
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .shortcut-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .shortcut-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
       font-size: 14px;
-      color: #666;
+    }
+
+    .shortcut-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .keys {
+      display: flex;
+      gap: 4px;
+    }
+
+    kbd {
+      display: inline-block;
+      padding: 3px 6px;
+      font-size: 12px;
+      font-family: inherit;
+      line-height: 1;
+      color: #444;
+      vertical-align: middle;
+      background-color: var(--key-bg);
+      border: 1px solid var(--key-border);
+      border-radius: 4px;
+      box-shadow: 0 1px 0 rgba(0,0,0,0.1);
+      min-width: 16px;
+      text-align: center;
+    }
+
+    .platform-switch {
+      font-size: 12px;
+      color: #999;
+      margin-top: 4px;
+      text-align: right;
+      display: block;
+    }
+
+    .footer {
+      margin-top: 20px;
+      padding-top: 15px;
+      border-top: 1px solid var(--border-color);
+      font-size: 12px;
+      color: var(--sub-text-color);
+      line-height: 1.5;
+    }
+
+    .hint {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    code {
+      font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+      background: #f5f5f5;
+      padding: 2px 4px;
+      border-radius: 3px;
+      color: #d63384;
+    }
+    
+    a {
+      color: var(--primary-color);
+      text-decoration: none;
+    }
+    
+    a:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
 <body>
-  <h2>LLM Answer Navigator</h2>
-  <p>在 LLM 对话页面中快速导航 AI 回答</p>
-  <p><strong>快捷键：</strong></p>
-  <ul style="font-size: 13px; margin: 5px 0 5px 20px; color: #555; line-height: 1.6;">
-    <li><strong>导航：</strong> Option (⌥) + ↑/↓ <span style="color: #999;">(Mac)</span></li>
-    <li style="margin-left: 55px; color: #999;">Alt + ↑/↓ <span style="color: #999;">(Win/Linux)</span></li>
-    <li style="margin-top: 5px;"><strong>显示/隐藏：</strong> Option (⌥) + D <span style="color: #999;">(Mac)</span></li>
-    <li style="margin-left: 85px; color: #999;">Alt + D <span style="color: #999;">(Win/Linux)</span></li>
+  <div class="header">
+    <h2>LLM Chat Prompt Navigator</h2>
+    <p class="desc">在 LLM 对话页面中快速导航 AI 回答</p>
+  </div>
+
+  <div class="section-title">快捷键 (Shortcuts)</div>
+  
+  <ul class="shortcut-list">
+    <li class="shortcut-item">
+      <div class="shortcut-label">
+        <span>↕️ 切换回答</span>
+      </div>
+      <div class="keys-container">
+        <div class="keys">
+          <kbd>⌥</kbd><kbd>↑/↓</kbd>
+        </div>
+        <span class="platform-switch">Win: <kbd>Alt</kbd> + <kbd>↑/↓</kbd></span>
+      </div>
+    </li>
+
+    <li class="shortcut-item">
+      <div class="shortcut-label">
+        <span>📌 标记/取消</span>
+      </div>
+      <div class="keys-container">
+        <div class="keys">
+          <kbd>⌥</kbd><kbd>S</kbd>
+        </div>
+        <span class="platform-switch">Win: <kbd>Alt</kbd> + <kbd>S</kbd></span>
+      </div>
+    </li>
+
+    <li class="shortcut-item">
+      <div class="shortcut-label">
+        <span>👁️ 显示/隐藏</span>
+      </div>
+      <div class="keys-container">
+        <div class="keys">
+          <kbd>⌥</kbd><kbd>D</kbd>
+        </div>
+        <span class="platform-switch">Win: <kbd>Alt</kbd> + <kbd>D</kbd></span>
+      </div>
+    </li>
   </ul>
-  <p style="font-size: 12px; color: #666; margin-top: 10px;">
-    💡 可在 <code style="background: #f0f0f0; padding: 2px 4px; border-radius: 3px;">chrome://extensions/shortcuts/</code> 自定义<br>
-    🎨 在选项页面可以选择主题颜色
-  </p>
+
+  <div class="footer">
+    <div class="hint">
+      <span>🎨</span>
+      <span>右键点击插件图标 -> 选项，可自定义主题颜色和开启其他站点支持。</span>
+    </div>
+    <div class="hint">
+      <span>⚙️</span>
+      <span>快捷键访问 <a href="#" id="shortcuts-link">chrome://extensions/shortcuts</a> 修改。</span>
+    </div>
+  </div>
+
   <script src="index.js" type="module"></script>
 </body>
 </html>
-
