@@ -20,8 +20,8 @@ export class RightSideTimelineNavigator {
   private resizeObserver: ResizeObserver | null = null;
   private conversationId: string | null = null;
   private pinnedNodes: Set<string> = new Set();
-  private contentHeight: number = 0;
 
+  private contentHeight: number = 0;
   private slider: HTMLElement | null = null;
   private sliderHandle: HTMLElement | null = null;
   private sliderVisible: boolean = false;
@@ -42,13 +42,6 @@ export class RightSideTimelineNavigator {
   // 防止 ResizeObserver 无限循环的标志
   private isUpdatingPositions: boolean = false;
 
-  private readonly handleNodesScroll = () => {
-    if (this.sliderDragging) {
-      return;
-    }
-    this.syncSliderToScroll();
-  };
-
   constructor() {
     // 确保主题已初始化
     const savedTheme = localStorage.getItem('llm_nav_theme_cache');
@@ -68,7 +61,7 @@ export class RightSideTimelineNavigator {
     document.body.appendChild(this.tooltip);
 
     this.createSlider();
-    this.nodesWrapper.addEventListener('scroll', this.handleNodesScroll, { passive: true });
+    this.nodesWrapper.addEventListener('scroll', this.handleWrapperScroll, { passive: true });
     
     // 监听容器大小变化
     this.resizeObserver = new ResizeObserver(() => {
@@ -171,13 +164,15 @@ export class RightSideTimelineNavigator {
       backgroundColor: this.currentTheme.timelineBarColor, // 使用主题色
       transform: 'translateX(-50%)',
       pointerEvents: 'none',
-      transition: 'background-color 0.3s ease',
-      zIndex: '1'
+      transition: 'background-color 0.3s ease'
     });
 
     return bar;
   }
 
+  /**
+   * 创建节点容器（支持滚动）
+   */
   private createNodesWrapper(): HTMLElement {
     const wrapper = document.createElement('div');
     wrapper.className = 'timeline-nodes-wrapper';
@@ -189,15 +184,18 @@ export class RightSideTimelineNavigator {
       height: '100%',
       overflowY: 'auto',
       overflowX: 'hidden',
-      scrollbarWidth: 'none',
-      msOverflowStyle: 'none',
+      scrollbarWidth: 'none', // Firefox 隐藏滚动条
+      msOverflowStyle: 'none', // IE/Edge
       pointerEvents: 'auto',
       zIndex: '2'
     });
+    // WebKit 隐藏滚动条
+    wrapper.style.setProperty('scrollbar-color', 'transparent transparent');
+    wrapper.style.setProperty('scrollbar-width', 'none');
     wrapper.addEventListener('wheel', (event) => {
-      // 阻止冒泡，避免影响页面主体滚动
+      // 防止滚动事件冒泡到页面其他区域
       event.stopPropagation();
-    });
+    }, { passive: true });
     return wrapper;
   }
 
@@ -486,13 +484,10 @@ export class RightSideTimelineNavigator {
       // 清空节点
         this.nodes.forEach(node => node.remove());
         this.nodes = [];
-        this.nodesContent.style.height = '100%';
         this.nodesWrapper.scrollTop = 0;
+        this.nodesContent.style.height = '100%';
         this.contentHeight = 0;
-        this.sliderVisible = false;
-        if (this.slider) {
-          this.slider.style.display = 'none';
-        }
+        this.hideSlider();
         return;
     }
 
@@ -551,37 +546,33 @@ export class RightSideTimelineNavigator {
       const count = this.items.length;
       if (count === 0) return;
 
-      const wrapperHeight = this.nodesWrapper.clientHeight;
-      if (wrapperHeight === 0) return;
+      const containerHeight = this.container.clientHeight;
+      // 容器可能还没渲染出来
+      if (containerHeight === 0) return;
 
-      const padding = this.NODE_PADDING;
-      const desiredHeight = padding * 2 + Math.max(0, (count - 1)) * this.MIN_NODE_GAP;
-      this.contentHeight = Math.max(wrapperHeight, desiredHeight);
-      this.nodesContent.style.height = `${this.contentHeight}px`;
-
-      const usableHeight = this.contentHeight - padding * 2;
+      const padding = 30; // 上下留白
+      const usableHeight = containerHeight - padding * 2;
 
       this.items.forEach((item, index) => {
         const node = this.nodes[index];
         if (!node) return;
 
-        let ratio: number;
-        if (typeof item.relativePosition === 'number' && !isNaN(item.relativePosition)) {
-          ratio = Math.max(0, Math.min(1, item.relativePosition));
-        } else if (count === 1) {
-          ratio = 0;
+        let topPosition = padding;
+
+        if (count === 1) {
+          // 如果只有一个节点，显示在顶部
+          topPosition = padding;
         } else {
-          ratio = index / (count - 1);
+          // 多个节点：按索引均匀分布
+          // 公式：Padding + (当前索引 / (总数 - 1)) * 可用高度
+          // index=0 -> 0% (Top)
+          // index=max -> 100% (Bottom)
+          const ratio = index / (count - 1);
+          topPosition = padding + ratio * usableHeight;
         }
-
-        const topPosition = padding + ratio * usableHeight;
+        
         node.style.top = `${topPosition}px`;
-        node.dataset.timelineTop = String(topPosition);
       });
-
-      this.updateSliderVisibility();
-      this.syncSliderToScroll();
-      this.ensureActiveNodeVisible();
     } finally {
       // 确保标志位被重置
       this.isUpdatingPositions = false;
@@ -599,26 +590,26 @@ export class RightSideTimelineNavigator {
    * 确保当前激活节点在可视区域内
    */
   private ensureActiveNodeVisible(): void {
+    if (!this.nodesWrapper || this.activeIndex < 0 || this.activeIndex >= this.nodes.length) return;
     const wrapperHeight = this.nodesWrapper.clientHeight || 0;
     if (wrapperHeight === 0) return;
-    const activeNode = this.nodes[this.activeIndex];
-    if (!activeNode) return;
 
-    const top = parseFloat(activeNode.dataset.timelineTop || activeNode.style.top || '0');
-    const bottom = top + activeNode.offsetHeight;
+    const activeNode = this.nodes[this.activeIndex];
+    const nodeTop = parseFloat(activeNode.dataset.timelineTop || activeNode.style.top || '0');
+    const nodeBottom = nodeTop + activeNode.offsetHeight;
     const visibleTop = this.nodesWrapper.scrollTop;
     const visibleBottom = visibleTop + wrapperHeight;
     const padding = 40;
 
-    let targetScroll = visibleTop;
-    if (top < visibleTop + padding) {
-      targetScroll = Math.max(0, top - padding);
-    } else if (bottom > visibleBottom - padding) {
-      targetScroll = Math.min(this.contentHeight - wrapperHeight, bottom - wrapperHeight + padding);
+    let nextScrollTop = visibleTop;
+    if (nodeTop < visibleTop + padding) {
+      nextScrollTop = Math.max(0, nodeTop - padding);
+    } else if (nodeBottom > visibleBottom - padding) {
+      nextScrollTop = Math.min(this.contentHeight - wrapperHeight, nodeBottom - wrapperHeight + padding);
     }
 
-    if (isFinite(targetScroll) && targetScroll !== visibleTop) {
-      this.nodesWrapper.scrollTop = targetScroll;
+    if (nextScrollTop !== visibleTop && isFinite(nextScrollTop)) {
+      this.nodesWrapper.scrollTop = nextScrollTop;
       this.syncSliderToScroll();
     }
   }
@@ -711,15 +702,22 @@ export class RightSideTimelineNavigator {
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
     }
-    this.nodesWrapper.removeEventListener('scroll', this.handleNodesScroll);
+    if (this.nodesWrapper) {
+      this.nodesWrapper.removeEventListener('scroll', this.handleWrapperScroll);
+    }
     this.detachSliderEvents();
+    this.slider?.remove();
     this.container.remove();
     this.tooltip.remove();
-    this.slider?.remove();
   }
 
+  private handleWrapperScroll = (): void => {
+    if (this.sliderDragging) return;
+    this.syncSliderToScroll();
+  };
+
   /**
-   * 构建可拖动的滚动条（置于节点列左侧）
+   * 创建自定义滚动条
    */
   private createSlider(): void {
     const slider = document.createElement('div');
@@ -750,10 +748,10 @@ export class RightSideTimelineNavigator {
       top: '0'
     });
 
+    handle.addEventListener('pointerdown', (event) => this.startSliderDrag(event));
+
     slider.appendChild(handle);
     this.container.appendChild(slider);
-
-    handle.addEventListener('pointerdown', (event) => this.startSliderDrag(event));
 
     this.slider = slider;
     this.sliderHandle = handle;
@@ -761,17 +759,15 @@ export class RightSideTimelineNavigator {
 
   private updateSliderVisibility(): void {
     if (!this.slider || !this.sliderHandle) return;
-
     const wrapperHeight = this.nodesWrapper.clientHeight || 0;
+
     if (wrapperHeight === 0 || this.contentHeight <= wrapperHeight + 1) {
-      this.slider.style.display = 'none';
-      this.sliderVisible = false;
-      this.sliderHandle.style.top = '0px';
+      this.hideSlider();
       return;
     }
 
     this.sliderVisible = true;
-    const sliderHeight = Math.max(100, Math.min(wrapperHeight, 240));
+    const sliderHeight = Math.max(120, Math.min(wrapperHeight, 240));
     this.slider.style.display = 'flex';
     this.slider.style.height = `${sliderHeight}px`;
     this.slider.style.top = `calc(50% - ${sliderHeight / 2}px)`;
@@ -780,24 +776,28 @@ export class RightSideTimelineNavigator {
     const handleHeight = Math.max(24, Math.min(sliderHeight - 12, sliderHeight * ratio));
     this.sliderHandle.style.height = `${handleHeight}px`;
     this.sliderDragMaxTop = Math.max(1, sliderHeight - handleHeight);
+
+    this.syncSliderToScroll();
+  }
+
+  private hideSlider(): void {
+    if (!this.slider || !this.sliderHandle) return;
+    this.sliderVisible = false;
+    this.slider.style.display = 'none';
+    this.sliderHandle.style.top = '0px';
   }
 
   private syncSliderToScroll(): void {
     if (!this.slider || !this.sliderHandle || !this.sliderVisible) return;
-
     const wrapperHeight = this.nodesWrapper.clientHeight || 0;
     const maxScroll = Math.max(1, this.contentHeight - wrapperHeight);
     const ratio = maxScroll > 0 ? this.nodesWrapper.scrollTop / maxScroll : 0;
-    const sliderHeight = this.slider.clientHeight || 1;
-    const handleHeight = this.sliderHandle.clientHeight || 1;
-    const maxTop = Math.max(1, sliderHeight - handleHeight);
-    this.sliderHandle.style.top = `${ratio * maxTop}px`;
+    this.sliderHandle.style.top = `${ratio * this.sliderDragMaxTop}px`;
   }
 
   private startSliderDrag(event: PointerEvent): void {
-    if (!this.sliderHandle || !this.slider || !this.sliderVisible) return;
+    if (!this.sliderHandle || !this.sliderVisible) return;
     event.preventDefault();
-
     this.sliderDragging = true;
     this.sliderPointerId = event.pointerId;
     this.sliderHandle.setPointerCapture(event.pointerId);
@@ -805,19 +805,19 @@ export class RightSideTimelineNavigator {
     this.sliderDragStartY = event.clientY;
     this.sliderDragStartHandleTop = this.sliderHandle.offsetTop || 0;
 
-    const sliderHeight = this.slider.clientHeight || 1;
-    const handleHeight = this.sliderHandle.clientHeight || 1;
+    const sliderHeight = this.slider?.clientHeight || 0;
+    const handleHeight = this.sliderHandle.clientHeight || 0;
     this.sliderDragMaxTop = Math.max(1, sliderHeight - handleHeight);
 
     this.sliderPointerMoveHandler = (e) => this.handleSliderDrag(e);
     this.sliderPointerUpHandler = (e) => this.endSliderDrag(e);
     window.addEventListener('pointermove', this.sliderPointerMoveHandler, { passive: false });
-    window.addEventListener('pointerup', this.sliderPointerUpHandler);
+    window.addEventListener('pointerup', this.sliderPointerUpHandler, { passive: true });
   }
 
   private handleSliderDrag(event: PointerEvent): void {
-    if (!this.sliderDragging || !this.sliderHandle || !this.sliderVisible) return;
-
+    if (!this.sliderDragging || !this.sliderHandle) return;
+    event.preventDefault();
     const deltaY = event.clientY - this.sliderDragStartY;
     let nextTop = this.sliderDragStartHandleTop + deltaY;
     nextTop = Math.max(0, Math.min(nextTop, this.sliderDragMaxTop));
@@ -827,7 +827,6 @@ export class RightSideTimelineNavigator {
     const maxScroll = Math.max(1, this.contentHeight - wrapperHeight);
     const ratio = this.sliderDragMaxTop > 0 ? nextTop / this.sliderDragMaxTop : 0;
     this.nodesWrapper.scrollTop = ratio * maxScroll;
-    event.preventDefault();
   }
 
   private endSliderDrag(event?: PointerEvent): void {
@@ -844,7 +843,9 @@ export class RightSideTimelineNavigator {
       }
     }
     this.sliderPointerId = null;
-    this.sliderHandle?.style.setProperty('cursor', 'grab');
+    if (this.sliderHandle) {
+      this.sliderHandle.style.cursor = 'grab';
+    }
     this.detachSliderEvents();
     this.syncSliderToScroll();
   }
