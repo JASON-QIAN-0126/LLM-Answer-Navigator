@@ -32,16 +32,16 @@ When using AI chat tools like ChatGPT, Claude, or Gemini, have you ever encounte
 
 ## ✨ Key Features
 
-### 🎯 **Side Timeline Navigation**
-- Elegant **vertical timeline** on the right side of the page, each node represents a conversation turn
+### 🎯 **Conversation History Navigator (Right Side)**
+- Shows a slim navigation bar on the right; each dot represents **one of your previous prompts in this conversation**
 - **Hover preview** of prompt content (shows first 80 characters)
-- **Click nodes** to instantly jump to corresponding position with highlighting
-- Automatically tracks current viewing position, timeline nodes sync in real-time
+- **Click any dot** to instantly jump to that request and its answer, with highlighting
+- Automatically follows your scroll position so the active dot always matches what you're looking at
 
 ### ⌨️ **Powerful Keyboard Shortcuts**
 - **Alt + W / Alt + S**: Quickly switch to previous/next answer
 - **Alt + A**: Mark/unmark current conversation (highlight important content)
-- **Alt + D**: Show/hide timeline (collapse when you need to focus)
+- **Alt + D**: Show/hide the right-side history bar (collapse when you need to focus)
 - Supports Mac and Windows, shortcuts are customizable
 
 ### 📌 **Smart Marking Feature**
@@ -53,7 +53,7 @@ When using AI chat tools like ChatGPT, Claude, or Gemini, have you ever encounte
 ### 🎨 **Theme Adaptive**
 - Supports **Auto/Light/Dark/Skyblue/Lavender** theme modes
 - Automatically follows system theme switching
-- Timeline colors perfectly blend with page style
+- Navigator colors perfectly blend with page style
 
 ### 🌐 **Multi-Platform Support**
 - ✅ **ChatGPT** (chatgpt.com)
@@ -66,11 +66,11 @@ When using AI chat tools like ChatGPT, Claude, or Gemini, have you ever encounte
 ### Install Extension
 1. Download and install **AI Chat Prompt Navigator** extension
 2. Open ChatGPT, Claude, or Gemini conversation page
-3. Timeline navigation will automatically appear on the right side of the page
+3. A right-side conversation history bar will automatically appear on the page
 
 ### Basic Operations
-- **View conversations**: Hover over timeline nodes to preview prompt content
-- **Quick jump**: Click any node to instantly jump to corresponding conversation
+- **View conversations**: Hover over the history dots on the right to preview prompt content
+- **Quick jump**: Click any dot to instantly jump to that request and its answer
 - **Mark highlights**: Long-press node for 0.5 seconds, or press `Alt + A` to mark current conversation
 - **Keyboard navigation**: Use `Alt + W/S` to quickly switch between conversations
 
