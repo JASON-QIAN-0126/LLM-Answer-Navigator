@@ -3,26 +3,28 @@
  * 负责平滑滚动到指定回答并高亮显示
  */
 
-import { themes, getDefaultTheme, type ThemeType } from './themes';
+import { themes, resolveTheme, DEFAULT_THEME_MODE, type ThemeType, type ThemeMode } from './themes';
 
 const HIGHLIGHT_CLASS = 'llm-answer-nav-highlight';
 let currentHighlightedNode: HTMLElement | null = null;
 let stylesInjected = false;
-let currentTheme: ThemeType = getDefaultTheme();
 
 /**
  * 注入高亮样式
  */
 async function injectStyles(): Promise<void> {
-  // 加载当前主题
+  // 加载当前主题模式
+  let themeMode: ThemeMode = DEFAULT_THEME_MODE;
   try {
     const result = await chrome.storage.sync.get('ui_theme');
-    currentTheme = (result.ui_theme as ThemeType) || getDefaultTheme();
+    themeMode = (result.ui_theme as ThemeMode) || DEFAULT_THEME_MODE;
   } catch (error) {
     console.error('加载主题失败:', error);
   }
   
-  const theme = themes[currentTheme];
+  // 解析为实际主题
+  const actualTheme = resolveTheme(themeMode);
+  const theme = themes[actualTheme];
   
   // 移除旧样式
   const oldStyle = document.getElementById('llm-answer-nav-styles');

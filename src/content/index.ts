@@ -270,7 +270,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   } else if (message.type === 'LLM_NAV_THEME_CHANGED') {
     console.log('主题已更改:', message.theme);
     if (navigatorUI) {
-      navigatorUI.setTheme(message.theme);
+      navigatorUI.setThemeMode(message.theme);
       sendResponse({ success: true });
     } else {
       sendResponse({ success: false, error: 'UI not initialized' });

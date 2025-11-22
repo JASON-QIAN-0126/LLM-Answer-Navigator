@@ -62,11 +62,12 @@ export const themes: Record<string, Theme> = {
 };
 
 export type ThemeType = keyof typeof themes;
+export type ThemeMode = ThemeType | 'auto'; // auto 表示跟随系统
 
 /**
- * 根据系统主题获取默认主题
+ * 根据系统主题获取对应的主题
  */
-export function getDefaultTheme(): ThemeType {
+export function getSystemTheme(): ThemeType {
   // 检测系统是否使用暗色模式
   if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
     return 'dark';
@@ -74,5 +75,15 @@ export function getDefaultTheme(): ThemeType {
   return 'green';
 }
 
-export const DEFAULT_THEME: ThemeType = getDefaultTheme();
+/**
+ * 根据主题模式获取实际应用的主题
+ */
+export function resolveTheme(mode: ThemeMode): ThemeType {
+  if (mode === 'auto') {
+    return getSystemTheme();
+  }
+  return mode as ThemeType;
+}
+
+export const DEFAULT_THEME_MODE: ThemeMode = 'auto'; // 默认跟随系统
 

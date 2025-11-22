@@ -1,4 +1,4 @@
-import { themes, type ThemeType, getDefaultTheme, type Theme } from './themes';
+import { themes, type ThemeType, type ThemeMode, resolveTheme, DEFAULT_THEME_MODE, type Theme } from './themes';
 
 /**
  * 导航 UI 管理器
@@ -15,8 +15,9 @@ export class NavigatorUI {
   
   private currentIndex: number = 0;
   private totalCount: number = 0;
-  private currentTheme: ThemeType = getDefaultTheme();
+  private currentThemeMode: ThemeMode = DEFAULT_THEME_MODE;
   private isHidden: boolean = false;
+  private systemThemeListener: ((e: MediaQueryListEvent) => void) | null = null;
 
   constructor() {
     this.container = this.createContainer();
@@ -27,6 +28,7 @@ export class NavigatorUI {
     this.setupUI();
     this.attachToPage();
     this.loadTheme();
+    this.setupSystemThemeListener();
   }
 
   /**
@@ -221,6 +223,13 @@ export class NavigatorUI {
    * 移除 UI
    */
   destroy(): void {
+    // 移除系统主题监听器
+    if (this.systemThemeListener) {
+      const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      darkModeQuery.removeEventListener('change', this.systemThemeListener);
+      this.systemThemeListener = null;
+    }
+    
     this.container.remove();
   }
 
@@ -230,21 +239,35 @@ export class NavigatorUI {
   private async loadTheme(): Promise<void> {
     try {
       const result = await chrome.storage.sync.get('ui_theme');
-      // 如果用户没有设置过主题，使用系统默认
-      const themeName = (result.ui_theme as ThemeType) || getDefaultTheme();
-      this.setTheme(themeName);
+      // 如果用户没有设置过主题，使用"auto"（跟随系统）
+      const themeMode = (result.ui_theme as ThemeMode) || DEFAULT_THEME_MODE;
+      this.setThemeMode(themeMode);
     } catch (error) {
       console.error('加载主题失败:', error);
-      this.setTheme(getDefaultTheme());
+      this.setThemeMode(DEFAULT_THEME_MODE);
     }
   }
 
   /**
-   * 设置主题
+   * 设置主题模式
    */
-  setTheme(themeName: ThemeType): void {
-    const theme = themes[themeName] || themes[getDefaultTheme()];
-    this.currentTheme = themeName;
+  setThemeMode(mode: ThemeMode): void {
+    this.currentThemeMode = mode;
+    const actualTheme = resolveTheme(mode);
+    this.applyTheme(actualTheme);
+    
+    if (mode === 'auto') {
+      console.log(`🎨 主题模式: 跟随系统 (当前: ${themes[actualTheme].name})`);
+    } else {
+      console.log(`🎨 主题已切换为: ${themes[actualTheme].name}`);
+    }
+  }
+
+  /**
+   * 应用主题样式
+   */
+  private applyTheme(themeName: ThemeType): void {
+    const theme = themes[themeName] || themes[resolveTheme(DEFAULT_THEME_MODE)];
     
     // 更新容器样式
     this.container.style.background = theme.background;
@@ -264,8 +287,25 @@ export class NavigatorUI {
     
     // 更新文字颜色
     this.indexDisplay.style.color = theme.textColor;
+  }
+
+  /**
+   * 监听系统主题变化
+   */
+  private setupSystemThemeListener(): void {
+    const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
     
-    console.log(`🎨 主题已切换为: ${theme.name}`);
+    this.systemThemeListener = (e: MediaQueryListEvent) => {
+      // 只在"auto"模式下才响应系统主题变化
+      if (this.currentThemeMode === 'auto') {
+        const newTheme = e.matches ? 'dark' : 'green';
+        console.log(`🌓 系统主题已变化，切换到: ${themes[newTheme].name}`);
+        this.applyTheme(newTheme);
+      }
+    };
+    
+    // 添加监听器
+    darkModeQuery.addEventListener('change', this.systemThemeListener);
   }
 
   /**
