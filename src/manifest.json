@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "Ai Chat Quick Navigator",
-  "version": "1.0.0",
+  "name": "Ai Chat Quick jump",
+  "version": "1.0.1",
   "description": "简约的设计、便捷的操作、多样的主题，为ChatGPT、Claude、Gemini、DeepSeek提供快捷的定位、跳转、重点标记。",
   "icons": {
     "16": "icon16.png",
@@ -11,7 +11,6 @@
   },
   "permissions": [
     "tabs",
-    "scripting",
     "storage"
   ],
   "background": {
