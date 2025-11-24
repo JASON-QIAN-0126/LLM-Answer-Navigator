@@ -11,7 +11,12 @@
   },
   "permissions": [
     "tabs",
-    "storage"
+    "storage",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://*/*",
+    "http://*/*"
   ],
   "background": {
     "service_worker": "background/index.js"

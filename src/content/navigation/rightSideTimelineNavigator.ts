@@ -413,7 +413,9 @@ export class RightSideTimelinejump {
           this.updateNodeStyle(node, index);
           
           // 震动反馈 (如果支持)
-          if (jump.vibrate) jump.vibrate(50);
+          if (navigator.vibrate) {
+            try { navigator.vibrate(50); } catch (e) {}
+          }
         }
         
         // 无论结果如何，重置填充层（因为状态改变后 updateNodeStyle 会处理背景色）
@@ -702,7 +704,9 @@ export class RightSideTimelinejump {
     this.updateNodeStyle(this.nodes[index], index);
     
     // 震动反馈
-    if (jump.vibrate) jump.vibrate(50);
+    if (navigator.vibrate) {
+      try { navigator.vibrate(50); } catch (e) {}
+    }
   }
 
   /**

@@ -32,7 +32,7 @@ export const messages = {
     'options.shortcuts.mark.desc': 'Mac: Option (⌥) + A | Win: Alt + A',
     'options.shortcuts.toggle': '显示/隐藏面板',
     'options.shortcuts.toggle.desc': 'Mac: Option (⌥) + D | Win: Alt + D',
-    'options.shortcuts.custom.hint': '💡 想要自定义快捷键？访问',
+    'options.shortcuts.custom.hint': '💡 访问',
     'options.save.success': '✓ 设置已保存',
     'options.domain.invalid': '请输入有效的域名',
     'options.domain.exists': '该域名已存在',
@@ -44,7 +44,7 @@ export const messages = {
     'popup.switch': '↕️ 切换回答',
     'popup.mark': '📌 标记/取消',
     'popup.toggle': '👁️ 显示/隐藏',
-    'popup.hint.theme': '右键点击插件图标 -> 选项，可自定义主题颜色和开启其他站点支持。',
+    'popup.hint.theme': '右键选项，可自定义主题颜色和开启其他站点支持。',
     'popup.hint.shortcuts': '快捷键访问',
     'popup.hint.modify': '修改。',
     'popup.feedback': '任何意见想法，欢迎访问'
@@ -92,7 +92,7 @@ export const messages = {
     'popup.switch': '↕️ Switch Answer',
     'popup.mark': '📌 Toggle Pin',
     'popup.toggle': '👁️ Show/Hide',
-    'popup.hint.theme': 'Right-click icon -> Options to customize theme and sites.',
+    'popup.hint.theme': 'Options to customize theme and sites.',
     'popup.hint.shortcuts': 'Visit',
     'popup.hint.modify': 'to modify shortcuts.',
     'popup.feedback': 'Feedback & Suggestions: '

@@ -1,7 +1,7 @@
 // Content Script
 import { getActiveAdapter } from './siteAdapters/index';
 import { AnswerIndexManager } from './navigation/answerIndexManager';
-import { RightSideTimelinejump } from './navigation/rightSideTimelinejump';
+import { RightSideTimelinejump } from './navigation/rightSideTimelineNavigator';
 import { scrollToAndHighlight } from './navigation/scrollAndHighlight';
 
 let indexManager: AnswerIndexManager | null = null;
