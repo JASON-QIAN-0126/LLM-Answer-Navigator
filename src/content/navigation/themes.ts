@@ -11,6 +11,8 @@ export interface TimelineTheme {
   pinnedColor: string;      // 重点标记颜色（取代默认的橙色）
   tooltipBackgroundColor: string; // Tooltip 背景色
   tooltipTextColor: string;       // Tooltip 文字颜色
+  highlightBorder: string;        // 高亮边框颜色
+  highlightBackground: string;    // 高亮背景颜色
 }
 
 export const themes: Record<string, TimelineTheme> = {
@@ -22,7 +24,9 @@ export const themes: Record<string, TimelineTheme> = {
     timelineBarColor: 'rgba(150, 150, 150, 0.3)',
     pinnedColor: '#0277BD', // 深蓝
     tooltipBackgroundColor: 'rgba(255, 255, 255, 0.95)',
-    tooltipTextColor: '#000000' // 黑色
+    tooltipTextColor: '#000000', // 黑色
+    highlightBorder: '#29B6F6',
+    highlightBackground: 'rgba(41, 182, 246, 0.1)'
   },
   dark: {
     name: '暗色',
@@ -32,7 +36,9 @@ export const themes: Record<string, TimelineTheme> = {
     timelineBarColor: 'rgba(255, 255, 255, 0.2)',
     pinnedColor: '#FF9800', // 橙色 (暗色下依然醒目)
     tooltipBackgroundColor: 'rgba(50, 50, 50, 0.95)',
-    tooltipTextColor: '#FFFFFF'
+    tooltipTextColor: '#FFFFFF',
+    highlightBorder: '#E0E0E0',
+    highlightBackground: 'rgba(255, 255, 255, 0.1)'
   },
   blue: {
     name: '天蓝色',
@@ -42,7 +48,9 @@ export const themes: Record<string, TimelineTheme> = {
     timelineBarColor: 'rgba(33, 150, 243, 0.3)',
     pinnedColor: '#0D47A1', // 深蓝 (重点)
     tooltipBackgroundColor: 'rgba(227, 242, 253, 0.95)', // 极浅蓝
-    tooltipTextColor: '#0D47A1' // 深蓝
+    tooltipTextColor: '#0D47A1', // 深蓝
+    highlightBorder: '#2196F3',
+    highlightBackground: 'rgba(33, 150, 243, 0.1)'
   },
   lavender: {
     name: '薰衣草',
@@ -52,7 +60,9 @@ export const themes: Record<string, TimelineTheme> = {
     timelineBarColor: 'rgba(156, 136, 255, 0.3)',
     pinnedColor: '#673AB7', // 深紫 (重点)
     tooltipBackgroundColor: 'rgba(237, 231, 246, 0.95)', // 极浅紫
-    tooltipTextColor: '#4527A0' // 深紫
+    tooltipTextColor: '#4527A0', // 深紫
+    highlightBorder: '#9C88FF',
+    highlightBackground: 'rgba(156, 136, 255, 0.1)'
   },
   pink: {
     name: '粉红色',
@@ -62,7 +72,9 @@ export const themes: Record<string, TimelineTheme> = {
     timelineBarColor: 'rgba(255, 64, 129, 0.3)',
     pinnedColor: '#C2185B', // 深粉红 (重点)
     tooltipBackgroundColor: 'rgba(252, 228, 236, 0.95)', // 极浅粉
-    tooltipTextColor: '#880E4F' // 深粉
+    tooltipTextColor: '#880E4F', // 深粉
+    highlightBorder: '#FF4081',
+    highlightBackground: 'rgba(255, 64, 129, 0.1)'
   },
   orange: {
     name: '橘黄色',
@@ -72,7 +84,9 @@ export const themes: Record<string, TimelineTheme> = {
     timelineBarColor: 'rgba(255, 152, 0, 0.3)',
     pinnedColor: '#E65100', // 深橘红 (重点)
     tooltipBackgroundColor: 'rgba(255, 243, 224, 0.95)', // 极浅橘
-    tooltipTextColor: '#E65100' // 深橘
+    tooltipTextColor: '#E65100', // 深橘
+    highlightBorder: '#FF9800',
+    highlightBackground: 'rgba(255, 152, 0, 0.1)'
   }
 };
 

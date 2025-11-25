@@ -1,0 +1,26 @@
+{
+  "extensionName": {
+    "message": "Ai Chat Quick jump",
+    "description": "插件名称"
+  },
+  "extensionDescription": {
+    "message": "为ChatGPT、Claude、Gemini、DeepSeek甚至自定义网站提供快捷的对话导航、跳转、重点标记，支持快捷键与主题定制。",
+    "description": "插件描述"
+  },
+  "cmdPrevAnswer": {
+    "message": "跳转到上一个回答",
+    "description": "命令描述"
+  },
+  "cmdNextAnswer": {
+    "message": "跳转到下一个回答",
+    "description": "命令描述"
+  },
+  "cmdToggleUI": {
+    "message": "显示/隐藏导航面板",
+    "description": "命令描述"
+  },
+  "cmdTogglePin": {
+    "message": "标记/取消标记当前回答",
+    "description": "命令描述"
+  }
+}

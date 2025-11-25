@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "Ai Chat Quick jump",
+  "default_locale": "zh_CN",
+  "name": "__MSG_extensionName__",
   "version": "1.0.1",
-  "description": "为ChatGPT、Claude、Gemini、DeepSeek甚至自定义网站提供快捷的对话导航、跳转、重点标记，支持快捷键与主题定制。",
+  "description": "__MSG_extensionDescription__",
   "icons": {
     "16": "icon16.png",
     "32": "icon32.png",
@@ -40,28 +41,28 @@
         "default": "Alt+W",
         "mac": "Alt+W"
       },
-      "description": "Go to previous answer"
+      "description": "__MSG_cmdPrevAnswer__"
     },
     "next-answer": {
       "suggested_key": {
         "default": "Alt+S",
         "mac": "Alt+S"
       },
-      "description": "Go to next answer"
+      "description": "__MSG_cmdNextAnswer__"
     },
     "toggle-ui": {
       "suggested_key": {
         "default": "Alt+D",
         "mac": "Alt+D"
       },
-      "description": "Toggle Navigation UI"
+      "description": "__MSG_cmdToggleUI__"
     },
     "toggle-pin": {
       "suggested_key": {
         "default": "Alt+A",
         "mac": "Alt+A"
       },
-      "description": "Toggle Pin for current answer"
+      "description": "__MSG_cmdTogglePin__"
     }
   },
   "options_page": "options/index.html",
