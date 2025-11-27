@@ -2,6 +2,7 @@ import type { PromptAnswerItem } from './answerIndexManager';
 import { PinnedStore } from '../store/pinnedStore';
 import { FavoriteStore, type FavoriteConversation } from '../store/favoriteStore';
 import { themes, resolveTheme, type ThemeMode, type TimelineTheme } from './themes';
+import { getTranslation, getSystemLanguage, type Language } from '../../utils/i18n';
 
 /**
  * 右侧时间线导航器
@@ -28,6 +29,7 @@ export class RightSideTimelinejump {
   private favoritesModal: HTMLElement | null = null;
   private isFavorited: boolean = false;
   private siteName: string = '';
+  private currentLanguage: Language = 'auto';
   private currentUrl: string = '';
 
   private contentHeight: number = 0;
@@ -177,7 +179,7 @@ export class RightSideTimelinejump {
       });
       
       if (pinnedItems.length > 0) {
-        const chatTitle = this.items.length > 0 ? this.items[0].promptText : '未命名对话';
+        const chatTitle = this.items.length > 0 ? this.items[0].promptText : this.t('favorites.unnamed');
         await FavoriteStore.favoriteConversation(
           this.conversationId,
           this.currentUrl,
@@ -196,6 +198,20 @@ export class RightSideTimelinejump {
    */
   setSiteName(name: string): void {
     this.siteName = name;
+  }
+
+  /**
+   * 设置当前语言
+   */
+  setLanguage(lang: Language): void {
+    this.currentLanguage = lang;
+  }
+
+  /**
+   * 获取翻译文本
+   */
+  private t(key: string): string {
+    return getTranslation(key, this.currentLanguage);
   }
 
   /**
@@ -223,7 +239,7 @@ export class RightSideTimelinejump {
     });
     
     button.innerHTML = '☆'; // 空心星星
-    button.title = '收藏当前对话';
+    button.title = this.t('favorites.add');
     
     button.addEventListener('mouseenter', () => {
       button.style.opacity = '1';
@@ -273,7 +289,7 @@ export class RightSideTimelinejump {
         <span style="position: absolute; left: 6px; top: 0; opacity: 0.6;">★</span>
       </span>
     `;
-    button.title = '查看所有收藏';
+    button.title = this.t('favorites.viewAll');
     
     button.addEventListener('mouseenter', () => {
       button.style.opacity = '1';
@@ -327,7 +343,7 @@ export class RightSideTimelinejump {
       }
       
       // 获取整个对话的标题（使用第一个问题的文本）
-      const chatTitle = this.items.length > 0 ? this.items[0].promptText : '未命名对话';
+      const chatTitle = this.items.length > 0 ? this.items[0].promptText : this.t('favorites.unnamed');
       
       await FavoriteStore.favoriteConversation(
         this.conversationId,
@@ -340,6 +356,39 @@ export class RightSideTimelinejump {
     }
     
     this.updateTopStarStyle();
+    
+    // 添加跳跃动画反馈
+    this.playStarBounceAnimation();
+  }
+
+  /**
+   * 播放星星跳跃动画
+   */
+  private playStarBounceAnimation(): void {
+    if (!this.topStarButton) return;
+    
+    // 添加跳跃动画
+    this.topStarButton.style.transition = 'transform 0.1s ease-out';
+    this.topStarButton.style.transform = 'translateX(-50%) scale(1.4) translateY(-8px)';
+    
+    setTimeout(() => {
+      if (this.topStarButton) {
+        this.topStarButton.style.transform = 'translateX(-50%) scale(0.9) translateY(2px)';
+      }
+    }, 100);
+    
+    setTimeout(() => {
+      if (this.topStarButton) {
+        this.topStarButton.style.transform = 'translateX(-50%) scale(1.1) translateY(-3px)';
+      }
+    }, 200);
+    
+    setTimeout(() => {
+      if (this.topStarButton) {
+        this.topStarButton.style.transform = 'translateX(-50%) scale(1)';
+        this.topStarButton.style.transition = 'all 0.2s ease';
+      }
+    }, 300);
   }
 
   /**
@@ -382,12 +431,12 @@ export class RightSideTimelinejump {
       this.topStarButton.innerHTML = '★'; // 实心星星
       this.topStarButton.style.color = this.currentTheme.pinnedColor;
       this.topStarButton.style.opacity = '1';
-      this.topStarButton.title = '取消收藏';
+      this.topStarButton.title = this.t('favorites.remove');
     } else {
       this.topStarButton.innerHTML = '☆'; // 空心星星
       this.topStarButton.style.color = this.currentTheme.defaultNodeColor;
       this.topStarButton.style.opacity = '0.5';
-      this.topStarButton.title = '收藏当前对话';
+      this.topStarButton.title = this.t('favorites.add');
     }
   }
 
@@ -437,7 +486,7 @@ export class RightSideTimelinejump {
     });
     
     const title = document.createElement('h3');
-    title.textContent = '收藏列表';
+    title.textContent = this.t('favorites.list');
     Object.assign(title.style, {
       margin: '0',
       fontSize: '16px',
@@ -473,7 +522,7 @@ export class RightSideTimelinejump {
     
     if (favorites.length === 0) {
       const emptyMsg = document.createElement('p');
-      emptyMsg.textContent = '暂无收藏';
+      emptyMsg.textContent = this.t('favorites.empty');
       Object.assign(emptyMsg.style, {
         textAlign: 'center',
         color: 'rgba(128,128,128,0.8)',
@@ -561,7 +610,7 @@ export class RightSideTimelinejump {
     
     const titleText = document.createElement('span');
     titleText.textContent = conv.title;
-    titleText.title = '点击进入对话';
+    titleText.title = this.t('favorites.clickToOpen');
     Object.assign(titleText.style, {
       flex: '1',
       overflow: 'hidden',
@@ -582,7 +631,7 @@ export class RightSideTimelinejump {
     // 编辑按钮（简笔画铅笔图标）
     const editBtn = document.createElement('button');
     editBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>`;
-    editBtn.title = '编辑标题';
+    editBtn.title = this.t('favorites.editTitle');
     Object.assign(editBtn.style, {
       background: 'none',
       border: 'none',
@@ -661,7 +710,7 @@ export class RightSideTimelinejump {
     // 删除父项按钮（简笔画垃圾桶图标）
     const deleteBtn = document.createElement('button');
     deleteBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`;
-    deleteBtn.title = '删除此收藏';
+    deleteBtn.title = this.t('favorites.delete');
     Object.assign(deleteBtn.style, {
       background: 'none',
       border: 'none',
@@ -682,7 +731,7 @@ export class RightSideTimelinejump {
     });
     deleteBtn.addEventListener('click', async (e) => {
       e.stopPropagation();
-      const confirmed = await this.showConfirmDialog('确定要删除这个收藏吗？');
+      const confirmed = await this.showConfirmDialog(this.t('favorites.confirmDelete'));
       if (confirmed) {
         await FavoriteStore.unfavoriteConversation(conv.conversationId);
         item.remove();
@@ -760,7 +809,7 @@ export class RightSideTimelinejump {
       // 删除子项按钮（简笔画 X 图标）
       const subDeleteBtn = document.createElement('button');
       subDeleteBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
-      subDeleteBtn.title = '删除此子项';
+      subDeleteBtn.title = this.t('favorites.deleteSubItem');
       Object.assign(subDeleteBtn.style, {
         background: 'none',
         border: 'none',
@@ -782,7 +831,7 @@ export class RightSideTimelinejump {
       });
       subDeleteBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
-        const confirmed = await this.showConfirmDialog('确定要删除这个子项吗？');
+        const confirmed = await this.showConfirmDialog(this.t('favorites.confirmDelete'));
         if (confirmed) {
           await FavoriteStore.removeItem(conv.conversationId, subItem.nodeIndex);
           subItemEl.remove();
@@ -921,7 +970,7 @@ export class RightSideTimelinejump {
       
       // 取消按钮
       const cancelBtn = document.createElement('button');
-      cancelBtn.textContent = '取消';
+      cancelBtn.textContent = this.t('favorites.cancel');
       Object.assign(cancelBtn.style, {
         padding: '8px 20px',
         border: `1px solid ${theme.timelineBarColor}`,
@@ -943,7 +992,7 @@ export class RightSideTimelinejump {
       
       // 确认按钮
       const confirmBtn = document.createElement('button');
-      confirmBtn.textContent = '确定';
+      confirmBtn.textContent = this.t('favorites.confirm');
       Object.assign(confirmBtn.style, {
         padding: '8px 20px',
         border: 'none',

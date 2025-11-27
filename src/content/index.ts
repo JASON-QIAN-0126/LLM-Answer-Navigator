@@ -3,6 +3,7 @@ import { getActiveAdapter } from './siteAdapters/index';
 import { AnswerIndexManager } from './navigation/answerIndexManager';
 import { RightSideTimelinejump } from './navigation/rightSideTimelineNavigator';
 import { scrollToAndHighlight } from './navigation/scrollAndHighlight';
+import type { Language } from '../utils/i18n';
 
 let indexManager: AnswerIndexManager | null = null;
 let timelinejump: RightSideTimelinejump | null = null;
@@ -324,6 +325,10 @@ function initTimelinejump(): void {
   if (adapter) {
     timelinejump.setSiteName(adapter.name);
   }
+
+  // 1.6 设置语言
+  const language = (cachedSettings?.language as Language) || 'auto';
+  timelinejump.setLanguage(language);
 
   // 2. 更新/设置主题
   const theme = (cachedSettings?.ui_theme as ThemeMode) || 'auto';

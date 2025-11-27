@@ -46,7 +46,22 @@ export const messages = {
     'popup.hint.theme': '右键选项，可自定义主题颜色和开启其他站点支持。',
     'popup.hint.shortcuts': '快捷键访问',
     'popup.hint.modify': '修改。',
-    'popup.feedback': '任何意见想法，欢迎访问'
+    'popup.feedback': '任何意见想法，欢迎访问',
+
+    // Favorites
+    'favorites.unnamed': '未命名对话',
+    'favorites.add': '收藏当前对话',
+    'favorites.remove': '取消收藏',
+    'favorites.viewAll': '查看所有收藏',
+    'favorites.list': '收藏列表',
+    'favorites.empty': '暂无收藏',
+    'favorites.clickToOpen': '点击进入对话',
+    'favorites.editTitle': '编辑标题',
+    'favorites.delete': '删除此收藏',
+    'favorites.deleteSubItem': '删除此子项',
+    'favorites.confirmDelete': '确定要删除这个收藏吗？',
+    'favorites.cancel': '取消',
+    'favorites.confirm': '确定'
   },
   'en': {
     // Options Page
@@ -93,7 +108,22 @@ export const messages = {
     'popup.hint.theme': 'Options to customize theme and sites.',
     'popup.hint.shortcuts': 'Visit',
     'popup.hint.modify': 'to modify shortcuts.',
-    'popup.feedback': 'Feedback & Suggestions: '
+    'popup.feedback': 'Feedback & Suggestions: ',
+
+    // Favorites
+    'favorites.unnamed': 'Untitled',
+    'favorites.add': 'Add to Favorites',
+    'favorites.remove': 'Remove from Favorites',
+    'favorites.viewAll': 'View All Favorites',
+    'favorites.list': 'Favorites',
+    'favorites.empty': 'No favorites yet',
+    'favorites.clickToOpen': 'Click to open',
+    'favorites.editTitle': 'Edit title',
+    'favorites.delete': 'Delete',
+    'favorites.deleteSubItem': 'Delete item',
+    'favorites.confirmDelete': 'Are you sure you want to delete this?',
+    'favorites.cancel': 'Cancel',
+    'favorites.confirm': 'Confirm'
   }
 };
 
