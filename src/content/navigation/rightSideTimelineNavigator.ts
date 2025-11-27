@@ -393,9 +393,10 @@ export class RightSideTimelinejump {
 
   /**
    * 同步标记节点到收藏（当标记状态变化时调用）
+   * 如果有标记节点但尚未收藏，会自动创建收藏
    */
   async syncPinnedToFavorites(): Promise<void> {
-    if (!this.conversationId || !this.isFavorited) return;
+    if (!this.conversationId) return;
     
     // 收集当前所有被标记的节点
     const pinnedItems: Array<{ index: number; promptText: string }> = [];
@@ -410,15 +411,35 @@ export class RightSideTimelinejump {
       }
     });
     
-    // 如果没有标记的节点了，保留第一个节点作为代表
-    if (pinnedItems.length === 0 && this.items.length > 0) {
-      pinnedItems.push({
-        index: 0,
-        promptText: this.items[0].promptText
-      });
+    // 如果有标记的节点但尚未收藏，自动创建收藏
+    if (pinnedItems.length > 0 && !this.isFavorited) {
+      this.currentUrl = window.location.href;
+      const chatTitle = this.items.length > 0 ? this.items[0].promptText : this.t('favorites.unnamed');
+      
+      await FavoriteStore.favoriteConversation(
+        this.conversationId,
+        this.currentUrl,
+        this.siteName || 'Unknown',
+        chatTitle,
+        pinnedItems
+      );
+      this.isFavorited = true;
+      this.updateTopStarStyle();
+      this.playStarBounceAnimation();
+      return;
     }
     
-    await FavoriteStore.updateFavoriteItems(this.conversationId, pinnedItems);
+    // 如果已收藏，更新收藏的子项
+    if (this.isFavorited) {
+      // 如果没有标记的节点了，保留第一个节点作为代表
+      if (pinnedItems.length === 0 && this.items.length > 0) {
+        pinnedItems.push({
+          index: 0,
+          promptText: this.items[0].promptText
+        });
+      }
+      await FavoriteStore.updateFavoriteItems(this.conversationId, pinnedItems);
+    }
   }
 
   /**

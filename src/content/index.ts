@@ -26,7 +26,8 @@ async function getSettings() {
     'enable_gemini',
     'enable_deepseek',
     'enable_grok',
-    'ui_theme'
+    'ui_theme',
+    'language'
   ]);
   return cachedSettings;
 }
