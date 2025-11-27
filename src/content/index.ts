@@ -217,24 +217,53 @@ function clearUI(): void {
 
 /**
  * 检查 URL 参数并跳转到收藏的节点位置
+ * 使用轮询检测目标节点是否已加载，确保页面内容就绪后再跳转
  */
 function checkAndNavigateToFavoriteIndex(): void {
   const url = new URL(window.location.href);
   const navIndex = url.searchParams.get('llm_nav_index');
   
-  if (navIndex !== null) {
-    const index = parseInt(navIndex, 10);
-    if (!isNaN(index) && index >= 0) {
-      // 延迟执行，确保时间线已完全初始化
-      setTimeout(() => {
-        navigateToAnswer(index);
-      }, 500);
+  if (navIndex === null) return;
+  
+  const targetIndex = parseInt(navIndex, 10);
+  if (isNaN(targetIndex) || targetIndex < 0) return;
+  
+  // 清理 URL 参数，避免刷新时重复跳转
+  url.searchParams.delete('llm_nav_index');
+  window.history.replaceState({}, '', url.toString());
+  
+  // 轮询检测目标节点是否已加载
+  let attempts = 0;
+  const maxAttempts = 30; // 最多尝试 30 次（约 15 秒）
+  const checkInterval = 500; // 每 500ms 检查一次
+  
+  const checkAndNavigate = () => {
+    attempts++;
+    
+    if (!indexManager) {
+      if (attempts < maxAttempts) {
+        setTimeout(checkAndNavigate, checkInterval);
+      }
+      return;
     }
     
-    // 清理 URL 参数，避免刷新时重复跳转
-    url.searchParams.delete('llm_nav_index');
-    window.history.replaceState({}, '', url.toString());
-  }
+    const totalCount = indexManager.getTotalCount();
+    
+    // 检查目标索引是否在有效范围内
+    if (targetIndex < totalCount) {
+      // 目标节点已存在，执行跳转
+      navigateToAnswer(targetIndex);
+      return;
+    }
+    
+    // 目标节点还未加载，继续等待
+    if (attempts < maxAttempts) {
+      setTimeout(checkAndNavigate, checkInterval);
+    }
+  };
+  
+  // 开始检测
+  setTimeout(checkAndNavigate, checkInterval);
 }
 
 /**
