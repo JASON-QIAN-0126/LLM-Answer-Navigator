@@ -65,6 +65,7 @@ import { chatgptAdapter } from './chatgptAdapter';
 import { claudeAdapter } from './claudeAdapter';
 import { geminiAdapter } from './geminiAdapter';
 import { deepseekAdapter } from './deepseekAdapter';
+import { grokAdapter } from './grokAdapter';
 import { customSiteAdapter } from './customSiteAdapter';
 
 /**
@@ -75,7 +76,8 @@ const adapters: SiteAdapter[] = [
   chatgptAdapter,
   claudeAdapter,
   geminiAdapter,
-  deepseekAdapter
+  deepseekAdapter,
+  grokAdapter
 ];
 
 /**
