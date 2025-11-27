@@ -4,7 +4,7 @@
     "description": "插件名称"
   },
   "extensionDescription": {
-    "message": "为ChatGPT、Claude、Gemini、DeepSeek甚至自定义网站提供快捷的对话导航、跳转、重点标记，支持快捷键与主题定制。",
+    "message": "为ChatGPT、Gemini等主流AI网站提供快捷的对话跳转、标记与收藏功能，支持快捷键定制、主题定制甚至自定义网站支持。",
     "description": "插件描述"
   },
   "cmdPrevAnswer": {
