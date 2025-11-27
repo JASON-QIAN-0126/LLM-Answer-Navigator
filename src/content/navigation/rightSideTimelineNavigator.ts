@@ -1,5 +1,6 @@
 import type { PromptAnswerItem } from './answerIndexManager';
 import { PinnedStore } from '../store/pinnedStore';
+import { FavoriteStore, type FavoriteConversation } from '../store/favoriteStore';
 import { themes, resolveTheme, type ThemeMode, type TimelineTheme } from './themes';
 
 /**
@@ -20,6 +21,14 @@ export class RightSideTimelinejump {
   private resizeObserver: ResizeObserver | null = null;
   private conversationId: string | null = null;
   private pinnedNodes: Set<string> = new Set();
+  
+  // 收藏功能相关
+  private topStarButton: HTMLElement | null = null;
+  private bottomStarsButton: HTMLElement | null = null;
+  private favoritesModal: HTMLElement | null = null;
+  private isFavorited: boolean = false;
+  private siteName: string = '';
+  private currentUrl: string = '';
 
   private contentHeight: number = 0;
   private slider: HTMLElement | null = null;
@@ -60,6 +69,10 @@ export class RightSideTimelinejump {
     document.body.appendChild(this.container);
     document.body.appendChild(this.tooltip);
 
+    // 创建顶部单星按钮和底部三星按钮
+    this.createTopStarButton();
+    this.createBottomStarsButton();
+    
     this.createSlider();
     this.nodesWrapper.addEventListener('scroll', this.handleWrapperScroll, { passive: true });
     
@@ -107,6 +120,12 @@ export class RightSideTimelinejump {
     this.nodes.forEach((node, index) => {
       this.updateNodeStyle(node, index);
     });
+    
+    // 更新星星按钮样式
+    this.updateTopStarStyle();
+    if (this.bottomStarsButton) {
+      this.bottomStarsButton.style.color = this.currentTheme.defaultNodeColor;
+    }
   }
 
   /**
@@ -114,11 +133,459 @@ export class RightSideTimelinejump {
    */
   async setConversationId(id: string) {
     this.conversationId = id;
+    this.currentUrl = window.location.href;
     this.pinnedNodes = await PinnedStore.loadPinned(id);
+    
+    // 检查是否已收藏
+    this.isFavorited = await FavoriteStore.isFavorited(id);
+    this.updateTopStarStyle();
+    
     // 重新应用样式
     this.nodes.forEach((node, index) => {
       this.updateNodeStyle(node, index);
     });
+  }
+
+  /**
+   * 设置站点名称
+   */
+  setSiteName(name: string): void {
+    this.siteName = name;
+  }
+
+  /**
+   * 创建顶部单星按钮（收藏当前对话）
+   */
+  private createTopStarButton(): void {
+    const button = document.createElement('div');
+    button.className = 'timeline-top-star';
+    
+    Object.assign(button.style, {
+      position: 'absolute',
+      top: '-30px',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      width: '24px',
+      height: '24px',
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontSize: '18px',
+      opacity: '0.5',
+      transition: 'all 0.2s ease',
+      zIndex: '10'
+    });
+    
+    button.innerHTML = '☆'; // 空心星星
+    button.title = '收藏当前对话';
+    
+    button.addEventListener('mouseenter', () => {
+      button.style.opacity = '1';
+      button.style.transform = 'translateX(-50%) scale(1.2)';
+    });
+    
+    button.addEventListener('mouseleave', () => {
+      button.style.opacity = this.isFavorited ? '1' : '0.5';
+      button.style.transform = 'translateX(-50%) scale(1)';
+    });
+    
+    button.addEventListener('click', () => this.handleFavoriteClick());
+    
+    this.container.appendChild(button);
+    this.topStarButton = button;
+  }
+
+  /**
+   * 创建底部三星按钮（打开收藏列表）
+   */
+  private createBottomStarsButton(): void {
+    const button = document.createElement('div');
+    button.className = 'timeline-bottom-stars';
+    
+    Object.assign(button.style, {
+      position: 'absolute',
+      bottom: '-30px',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      width: '28px',
+      height: '24px',
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontSize: '12px',
+      opacity: '0.5',
+      transition: 'all 0.2s ease',
+      zIndex: '10'
+    });
+    
+    // 三星重叠效果
+    button.innerHTML = `
+      <span style="position: relative;">
+        <span style="position: absolute; left: -4px; top: 0; opacity: 0.6;">★</span>
+        <span style="position: relative; z-index: 1;">★</span>
+        <span style="position: absolute; left: 4px; top: 0; opacity: 0.6;">★</span>
+      </span>
+    `;
+    button.title = '查看所有收藏';
+    
+    button.addEventListener('mouseenter', () => {
+      button.style.opacity = '1';
+      button.style.transform = 'translateX(-50%) scale(1.2)';
+    });
+    
+    button.addEventListener('mouseleave', () => {
+      button.style.opacity = '0.5';
+      button.style.transform = 'translateX(-50%) scale(1)';
+    });
+    
+    button.addEventListener('click', () => this.showFavoritesModal());
+    
+    this.container.appendChild(button);
+    this.bottomStarsButton = button;
+  }
+
+  /**
+   * 处理收藏按钮点击
+   */
+  private async handleFavoriteClick(): Promise<void> {
+    if (!this.conversationId) return;
+    
+    this.currentUrl = window.location.href;
+    
+    if (this.isFavorited) {
+      // 取消收藏
+      await FavoriteStore.unfavoriteConversation(this.conversationId);
+      this.isFavorited = false;
+    } else {
+      // 收藏当前对话
+      // 收集所有被标记的节点
+      const pinnedItems: Array<{ index: number; promptText: string }> = [];
+      
+      this.pinnedNodes.forEach(nodeId => {
+        const index = parseInt(nodeId);
+        if (this.items[index]) {
+          pinnedItems.push({
+            index,
+            promptText: this.items[index].promptText
+          });
+        }
+      });
+      
+      // 如果没有标记的节点，收藏整个对话（使用第一个节点作为代表）
+      if (pinnedItems.length === 0 && this.items.length > 0) {
+        pinnedItems.push({
+          index: 0,
+          promptText: this.items[0].promptText
+        });
+      }
+      
+      await FavoriteStore.favoriteConversation(
+        this.conversationId,
+        this.currentUrl,
+        this.siteName || 'Unknown',
+        pinnedItems
+      );
+      this.isFavorited = true;
+    }
+    
+    this.updateTopStarStyle();
+  }
+
+  /**
+   * 更新顶部星星样式
+   */
+  private updateTopStarStyle(): void {
+    if (!this.topStarButton) return;
+    
+    if (this.isFavorited) {
+      this.topStarButton.innerHTML = '★'; // 实心星星
+      this.topStarButton.style.color = this.currentTheme.pinnedColor;
+      this.topStarButton.style.opacity = '1';
+      this.topStarButton.title = '取消收藏';
+    } else {
+      this.topStarButton.innerHTML = '☆'; // 空心星星
+      this.topStarButton.style.color = this.currentTheme.defaultNodeColor;
+      this.topStarButton.style.opacity = '0.5';
+      this.topStarButton.title = '收藏当前对话';
+    }
+  }
+
+  /**
+   * 显示收藏列表弹窗
+   */
+  private async showFavoritesModal(): Promise<void> {
+    // 如果弹窗已存在，先移除
+    if (this.favoritesModal) {
+      this.favoritesModal.remove();
+      this.favoritesModal = null;
+    }
+    
+    const favorites = await FavoriteStore.loadAll();
+    
+    // 创建弹窗
+    const modal = document.createElement('div');
+    modal.className = 'llm-favorites-modal';
+    
+    Object.assign(modal.style, {
+      position: 'fixed',
+      top: '50%',
+      left: '50%',
+      transform: 'translate(-50%, -50%)',
+      width: '400px',
+      maxWidth: '90vw',
+      maxHeight: '70vh',
+      backgroundColor: this.currentTheme.tooltipBackgroundColor,
+      color: this.currentTheme.tooltipTextColor,
+      borderRadius: '12px',
+      boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+      zIndex: '2147483647',
+      display: 'flex',
+      flexDirection: 'column',
+      overflow: 'hidden'
+    });
+    
+    // 标题栏
+    const header = document.createElement('div');
+    Object.assign(header.style, {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: '16px 20px',
+      borderBottom: '1px solid rgba(128,128,128,0.2)'
+    });
+    
+    const title = document.createElement('h3');
+    title.textContent = '⭐ 收藏列表';
+    Object.assign(title.style, {
+      margin: '0',
+      fontSize: '16px',
+      fontWeight: '600'
+    });
+    
+    const closeBtn = document.createElement('button');
+    closeBtn.innerHTML = '✕';
+    Object.assign(closeBtn.style, {
+      background: 'none',
+      border: 'none',
+      fontSize: '18px',
+      cursor: 'pointer',
+      color: this.currentTheme.tooltipTextColor,
+      opacity: '0.6',
+      padding: '4px 8px'
+    });
+    closeBtn.addEventListener('mouseenter', () => closeBtn.style.opacity = '1');
+    closeBtn.addEventListener('mouseleave', () => closeBtn.style.opacity = '0.6');
+    closeBtn.addEventListener('click', () => this.closeFavoritesModal());
+    
+    header.appendChild(title);
+    header.appendChild(closeBtn);
+    modal.appendChild(header);
+    
+    // 内容区域
+    const content = document.createElement('div');
+    Object.assign(content.style, {
+      flex: '1',
+      overflowY: 'auto',
+      padding: '12px 20px'
+    });
+    
+    if (favorites.length === 0) {
+      const emptyMsg = document.createElement('p');
+      emptyMsg.textContent = '暂无收藏';
+      Object.assign(emptyMsg.style, {
+        textAlign: 'center',
+        color: 'rgba(128,128,128,0.8)',
+        padding: '40px 0'
+      });
+      content.appendChild(emptyMsg);
+    } else {
+      favorites.forEach(conv => {
+        const convItem = this.createConversationItem(conv);
+        content.appendChild(convItem);
+      });
+    }
+    
+    modal.appendChild(content);
+    
+    // 添加遮罩层
+    const overlay = document.createElement('div');
+    overlay.className = 'llm-favorites-overlay';
+    Object.assign(overlay.style, {
+      position: 'fixed',
+      top: '0',
+      left: '0',
+      right: '0',
+      bottom: '0',
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      zIndex: '2147483646'
+    });
+    overlay.addEventListener('click', () => this.closeFavoritesModal());
+    
+    document.body.appendChild(overlay);
+    document.body.appendChild(modal);
+    this.favoritesModal = modal;
+  }
+
+  /**
+   * 创建对话收藏项
+   */
+  private createConversationItem(conv: FavoriteConversation): HTMLElement {
+    const item = document.createElement('div');
+    item.className = 'favorite-conversation';
+    
+    Object.assign(item.style, {
+      marginBottom: '12px',
+      borderRadius: '8px',
+      backgroundColor: 'rgba(128,128,128,0.1)',
+      overflow: 'hidden'
+    });
+    
+    // 对话标题行（可展开）
+    const titleRow = document.createElement('div');
+    Object.assign(titleRow.style, {
+      display: 'flex',
+      alignItems: 'center',
+      padding: '12px',
+      cursor: 'pointer',
+      gap: '8px'
+    });
+    
+    const expandIcon = document.createElement('span');
+    expandIcon.textContent = '▶';
+    Object.assign(expandIcon.style, {
+      fontSize: '10px',
+      transition: 'transform 0.2s',
+      opacity: '0.6'
+    });
+    
+    const titleText = document.createElement('span');
+    titleText.textContent = conv.title;
+    Object.assign(titleText.style, {
+      flex: '1',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap',
+      fontSize: '14px'
+    });
+    
+    const siteTag = document.createElement('span');
+    siteTag.textContent = conv.siteName;
+    Object.assign(siteTag.style, {
+      fontSize: '11px',
+      padding: '2px 6px',
+      backgroundColor: 'rgba(128,128,128,0.2)',
+      borderRadius: '4px',
+      opacity: '0.7'
+    });
+    
+    titleRow.appendChild(expandIcon);
+    titleRow.appendChild(titleText);
+    titleRow.appendChild(siteTag);
+    
+    // 子项容器（默认隐藏）
+    const subItems = document.createElement('div');
+    Object.assign(subItems.style, {
+      display: 'none',
+      padding: '0 12px 12px 28px'
+    });
+    
+    conv.items.forEach(subItem => {
+      const subItemEl = document.createElement('div');
+      Object.assign(subItemEl.style, {
+        padding: '8px 12px',
+        marginTop: '4px',
+        backgroundColor: 'rgba(128,128,128,0.1)',
+        borderRadius: '6px',
+        cursor: 'pointer',
+        fontSize: '13px',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+        transition: 'background-color 0.2s'
+      });
+      
+      // 截取文本，确保一行显示
+      const displayText = subItem.promptText.length > 40 
+        ? subItem.promptText.substring(0, 40) + '...'
+        : subItem.promptText;
+      subItemEl.textContent = displayText;
+      
+      subItemEl.addEventListener('mouseenter', () => {
+        subItemEl.style.backgroundColor = 'rgba(128,128,128,0.2)';
+      });
+      subItemEl.addEventListener('mouseleave', () => {
+        subItemEl.style.backgroundColor = 'rgba(128,128,128,0.1)';
+      });
+      
+      subItemEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.navigateToFavorite(conv, subItem.nodeIndex);
+      });
+      
+      subItems.appendChild(subItemEl);
+    });
+    
+    // 展开/折叠逻辑
+    let isExpanded = false;
+    titleRow.addEventListener('click', () => {
+      isExpanded = !isExpanded;
+      subItems.style.display = isExpanded ? 'block' : 'none';
+      expandIcon.style.transform = isExpanded ? 'rotate(90deg)' : 'rotate(0deg)';
+    });
+    
+    // 标题行点击跳转到对话
+    titleRow.addEventListener('dblclick', (e) => {
+      e.stopPropagation();
+      this.navigateToFavorite(conv, conv.items[0]?.nodeIndex || 0);
+    });
+    
+    item.appendChild(titleRow);
+    item.appendChild(subItems);
+    
+    return item;
+  }
+
+  /**
+   * 跳转到收藏的对话
+   */
+  private navigateToFavorite(conv: FavoriteConversation, nodeIndex: number): void {
+    const currentUrl = window.location.href;
+    const targetUrl = conv.url;
+    
+    // 如果是当前页面，直接跳转到节点
+    if (currentUrl === targetUrl || this.conversationId === conv.conversationId) {
+      this.closeFavoritesModal();
+      
+      // 触发点击回调跳转到指定节点
+      if (this.onClickCallback) {
+        this.onClickCallback(nodeIndex);
+      }
+    } else {
+      // 跳转到其他页面
+      // 在 URL 中添加节点索引参数，以便页面加载后跳转
+      const url = new URL(targetUrl);
+      url.searchParams.set('llm_nav_index', String(nodeIndex));
+      window.open(url.toString(), '_blank');
+      this.closeFavoritesModal();
+    }
+  }
+
+  /**
+   * 关闭收藏弹窗
+   */
+  private closeFavoritesModal(): void {
+    if (this.favoritesModal) {
+      this.favoritesModal.remove();
+      this.favoritesModal = null;
+    }
+    
+    // 移除遮罩层
+    const overlay = document.querySelector('.llm-favorites-overlay');
+    if (overlay) {
+      overlay.remove();
+    }
   }
 
   /**
@@ -723,6 +1190,7 @@ export class RightSideTimelinejump {
     this.slider?.remove();
     this.container.remove();
     this.tooltip.remove();
+    this.closeFavoritesModal();
   }
 
   private handleWrapperScroll = (): void => {

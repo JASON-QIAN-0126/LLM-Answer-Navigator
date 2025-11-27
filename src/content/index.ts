@@ -268,6 +268,12 @@ function initTimelinejump(): void {
   const conversationId = getConversationId();
   timelinejump.setConversationId(conversationId);
 
+  // 1.5 设置站点名称（用于收藏功能）
+  const adapter = getActiveAdapter(window.location, cachedSettings?.custom_urls || []);
+  if (adapter) {
+    timelinejump.setSiteName(adapter.name);
+  }
+
   // 2. 更新/设置主题
   const theme = (cachedSettings?.ui_theme as ThemeMode) || 'auto';
     timelinejump.setTheme(theme);
